@@ -1,34 +1,31 @@
 import SwiftUI
 import AppKit
 
-/// AMS Icon Library "keys" drawing, on a 24x24 grid scaled to the rect.
+/// AMS Icon Library "keycap" drawing (a keyboard key), on a 24x24 grid scaled to the rect.
 /// Stroke it with lineWidth ~1.9 * (size / 24), round caps and joins.
 struct KeysIcon: Shape {
     func path(in rect: CGRect) -> Path {
         let s = min(rect.width, rect.height) / 24
         let ox = rect.midX - 12 * s
         let oy = rect.midY - 12 * s
-        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: ox + x * s, y: oy + y * s) }
         var path = Path()
-        path.addEllipse(in: CGRect(x: ox + 3.5 * s, y: oy + 4 * s, width: 9 * s, height: 9 * s))
-        path.move(to: p(11.2, 11.7)); path.addLine(to: p(20, 20.5))
-        path.move(to: p(17.5, 18)); path.addLine(to: p(19.5, 16))
-        path.move(to: p(15, 15.5)); path.addLine(to: p(16.7, 13.8))
+        path.addRoundedRect(in: CGRect(x: ox + 3.5 * s, y: oy + 4.5 * s, width: 17 * s, height: 15 * s),
+                            cornerSize: CGSize(width: 3.5 * s, height: 3.5 * s))
+        path.addRoundedRect(in: CGRect(x: ox + 7 * s, y: oy + 8 * s, width: 10 * s, height: 6.5 * s),
+                            cornerSize: CGSize(width: 2 * s, height: 2 * s))
         return path
     }
 }
 
-/// 18x18 pt template image of the keys drawing for the menu bar.
+/// 18x18 pt template image of the keycap drawing for the menu bar.
 func keysMenuBarImage() -> NSImage {
     let size = NSSize(width: 18, height: 18)
     let image = NSImage(size: size, flipped: true) { rect in
         let s = rect.width / 24
-        func p(_ x: CGFloat, _ y: CGFloat) -> NSPoint { NSPoint(x: x * s, y: y * s) }
-        let path = NSBezierPath()
-        path.appendOval(in: NSRect(x: 3.5 * s, y: 4 * s, width: 9 * s, height: 9 * s))
-        path.move(to: p(11.2, 11.7)); path.line(to: p(20, 20.5))
-        path.move(to: p(17.5, 18)); path.line(to: p(19.5, 16))
-        path.move(to: p(15, 15.5)); path.line(to: p(16.7, 13.8))
+        let path = NSBezierPath(roundedRect: NSRect(x: 3.5 * s, y: 4.5 * s, width: 17 * s, height: 15 * s),
+                                xRadius: 3.5 * s, yRadius: 3.5 * s)
+        path.append(NSBezierPath(roundedRect: NSRect(x: 7 * s, y: 8 * s, width: 10 * s, height: 6.5 * s),
+                                 xRadius: 2 * s, yRadius: 2 * s))
         path.lineWidth = 1.5
         path.lineCapStyle = .round
         path.lineJoinStyle = .round

@@ -22,6 +22,25 @@ public enum Rules {
         return r + l
     }
 
+    /// What a card shows, optionally as today's pick: rechecks first, then the learning ones
+    /// shuffled once per day (same order all day, new order after midnight).
+    public static func ordered(_ g: AppGroup, now: Date, daily: Bool, calendar: Calendar = .current) -> [Shortcut] {
+        guard daily else { return visible(g, now: now) }
+        let c = calendar.dateComponents([.year, .month, .day], from: now)
+        let day = String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+        let r = g.shortcuts.filter { status($0, now: now, calendar: calendar) == .recheck }
+        let l = g.shortcuts.filter { status($0, now: now, calendar: calendar) == .learning }
+            .sorted { stableHash(day + "|" + $0.id.uuidString) < stableHash(day + "|" + $1.id.uuidString) }
+        return r + l
+    }
+
+    /// FNV-1a: the same number on every start (Swift's own hash changes each launch).
+    static func stableHash(_ text: String) -> UInt64 {
+        var h: UInt64 = 0xcbf29ce484222325
+        for b in text.utf8 { h ^= UInt64(b); h = h &* 0x100000001b3 }
+        return h
+    }
+
     public static func learnedCount(_ g: AppGroup, now: Date) -> Int {
         g.shortcuts.filter { status($0, now: now) == .learned }.count
     }

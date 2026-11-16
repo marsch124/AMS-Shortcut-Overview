@@ -149,6 +149,16 @@ struct LookPage: View {
         Form {
             Toggle("Show the cards on the desktop", isOn: $model.showCards)
             Stepper("Shortcuts per card: \(model.rowsPerCard)", value: $model.rowsPerCard, in: 3...12)
+            Toggle(isOn: $model.dailyPick) {
+                Text("Today's shortcuts")
+                Text("A fresh pick on every card each day, instead of list order.")
+            }
+            .accessibilityIdentifier("dailyPickSwitch")
+            Toggle(isOn: $model.quiz) {
+                Text("Quiz me")
+                Text("The keys hide until you point at a row or click them.")
+            }
+            .accessibilityIdentifier("quizSwitch")
             Toggle("Open at login", isOn: $atLogin)
                 .onChange(of: atLogin) { _, on in
                     if on { try? SMAppService.mainApp.register() } else { try? SMAppService.mainApp.unregister() }
@@ -162,6 +172,8 @@ struct LookPage: View {
         .formStyle(.grouped)
         .onChange(of: model.showCards) { _, _ in AppDelegate.shared.desktop?.refresh() }
         .onChange(of: model.rowsPerCard) { _, _ in AppDelegate.shared.desktop?.refresh() }
+        .onChange(of: model.dailyPick) { _, _ in AppDelegate.shared.desktop?.refresh() }
+        .onChange(of: model.quiz) { _, _ in AppDelegate.shared.desktop?.refresh() }
     }
 }
 

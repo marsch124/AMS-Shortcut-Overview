@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draws the AMS Shortcut Overview app icon: flat indigo squircle, white line-drawn keys (AMS Icon Library "keys")."""
+"""Draws the AMS Shortcut Overview app icon: flat indigo squircle, white line-drawn keycap (AMS Icon Library "keycap")."""
 import math, os, shutil, subprocess, tempfile
 from PIL import Image, ImageDraw
 
@@ -27,7 +27,7 @@ def render(stroke):
 
     scale = 640 * SS / 24
     # the 24-unit grid (not the drawing) is centred in the tile
-    cx, cy = 12.0, 12.25  # centre of the drawing (x 3.5..20.5, y 4..20.5)
+    cx, cy = 12.0, 12.0  # centre of the drawing (x 3.5..20.5, y 4.5..19.5)
     ox, oy = S / 2 - cx * scale, S / 2 - cy * scale
     P = lambda x, y: (ox + x * scale, oy + y * scale)
     r = stroke * scale / 2
@@ -51,11 +51,14 @@ def render(stroke):
             a = math.radians(a0 + (a1 - a0) * i / n)
             dab((c[0] + R * math.cos(a), c[1] + R * math.sin(a)))
 
-    # Library icon "keys": ring + shaft + two teeth (24-grid)
-    arc(8, 8.5, 4.5, 0, 360)
-    line((11.2, 11.7), (20, 20.5))
-    line((17.5, 18), (19.5, 16))
-    line((15, 15.5), (16.7, 13.8))
+    # Library icon "keycap": base rounded square + inset top face (24-grid)
+    def rrect(x0, y0, x1, y1, rad):
+        arc(x1 - rad, y0 + rad, rad, -90, 0); line((x1, y0 + rad), (x1, y1 - rad))
+        arc(x1 - rad, y1 - rad, rad, 0, 90); line((x1 - rad, y1), (x0 + rad, y1))
+        arc(x0 + rad, y1 - rad, rad, 90, 180); line((x0, y1 - rad), (x0, y0 + rad))
+        arc(x0 + rad, y0 + rad, rad, 180, 270); line((x0 + rad, y0), (x1 - rad, y0))
+    rrect(3.5, 4.5, 20.5, 19.5, 3.5)
+    rrect(7, 8, 17, 14.5, 2)
     return img.resize((1024, 1024), Image.LANCZOS)
 
 img = render(1.7)

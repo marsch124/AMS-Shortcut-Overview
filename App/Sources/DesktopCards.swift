@@ -85,16 +85,22 @@ struct AppCard: View {
     let group: AppGroup
     @Environment(\.colorScheme) private var scheme
     @State private var ticking: Set<UUID> = []
+    @State private var pointing: UUID?
+    @State private var revealed: Set<UUID> = []
 
     var body: some View {
         let c = CardColours.of(group.colour, dark: scheme == .dark)
-        let shown = Rules.visible(group, now: model.now)
+        let shown = model.cardRows(group)
         let rows = Array(shown.prefix(max(1, model.rowsPerCard)))
         let learned = Rules.learnedCount(group, now: model.now)
 
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 6) {
                 Text(group.name).font(.headline).foregroundStyle(c.title)
+                if model.dailyPick {
+                    Text("Today").font(.caption2.weight(.medium)).foregroundStyle(c.mark)
+                        .accessibilityIdentifier("todayLabel-\(group.name)")
+                }
                 Spacer(minLength: 8)
                 if learned > 0 {
                     Text("\(learned) learned").font(.caption2).foregroundStyle(c.mark)
@@ -140,8 +146,19 @@ struct AppCard: View {
                     .padding(.horizontal, 4).background(c.mark, in: Capsule())
             }
             Spacer(minLength: 6)
-            KeyCaps(keys: s.keys, fill: c.key, text: c.keyText)
+            let hidden = model.quiz && pointing != s.id && !revealed.contains(s.id)
+            KeyCaps(keys: s.keys, fill: c.key, text: c.keyText, hidden: hidden)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if revealed.contains(s.id) { revealed.remove(s.id) } else { revealed.insert(s.id) }
+                }
+                .help(model.quiz ? "Point here or click to see the keys" : "")
+                .accessibilityIdentifier("keys-\(s.name)")
         }
+        .contentShape(Rectangle())
+        .background(HoverArea { inside in
+            if inside { pointing = s.id } else if pointing == s.id { pointing = nil }
+        })
         .contextMenu {
             Button("Change…") { AppDelegate.shared.openEditor(shortcut: s, appName: group.name) }
             if recheck { Button("Still learning") { model.bringBack(s.id) } }
@@ -162,10 +179,12 @@ struct KeyCaps: View {
     let keys: String
     let fill: Color
     let text: Color
+    /// Quiz: each key shows "?" so you see how many keys it takes, not which.
+    var hidden = false
     var body: some View {
         HStack(spacing: 2) {
             ForEach(Array(Rules.keyParts(keys).enumerated()), id: \.offset) { _, part in
-                Text(part)
+                Text(hidden ? "?" : part)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(text)
                     .padding(.horizontal, 4).padding(.vertical, 1)
@@ -208,5 +227,28 @@ struct PlusMark: Shape {
         p.move(to: CGPoint(x: r.midX, y: r.minY)); p.addLine(to: CGPoint(x: r.midX, y: r.maxY))
         p.move(to: CGPoint(x: r.minX, y: r.midY)); p.addLine(to: CGPoint(x: r.maxX, y: r.midY))
         return p
+    }
+}
+
+/// Notices the mouse pointer even though the cards' app is never the active app
+/// (SwiftUI's own hover only works in the active app).
+struct HoverArea: NSViewRepresentable {
+    let changed: (Bool) -> Void
+    func makeNSView(context: Context) -> TrackingView { TrackingView(changed: changed) }
+    func updateNSView(_ v: TrackingView, context: Context) { v.changed = changed }
+
+    final class TrackingView: NSView {
+        var changed: (Bool) -> Void
+        init(changed: @escaping (Bool) -> Void) { self.changed = changed; super.init(frame: .zero) }
+        required init?(coder: NSCoder) { fatalError() }
+        override func updateTrackingAreas() {
+            super.updateTrackingAreas()
+            trackingAreas.forEach(removeTrackingArea)
+            addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                                           owner: self, userInfo: nil))
+        }
+        override func mouseEntered(with event: NSEvent) { changed(true) }
+        override func mouseExited(with event: NSEvent) { changed(false) }
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }
 }

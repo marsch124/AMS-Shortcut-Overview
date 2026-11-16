@@ -37,4 +37,20 @@ final class RulesTests: XCTestCase {
         XCTAssertEqual(lib.groups[0].colour, "purple")
         XCTAssertEqual(lib.groups[0].shortcuts[0].keys, "⌘ O")
     }
+
+    func testTodaysPickSameAllDayNewNextDayRechecksFirst() {
+        var list = (0..<8).map { i in
+            Shortcut(id: UUID(uuidString: "00000000-0000-0000-0000-00000000000\(i)")!, name: "S\(i)", keys: "A")
+        }
+        Rules.tick(&list[5], now: t0 - 20 * day)
+        let g = AppGroup(name: "X", colour: "teal", shortcuts: list)
+        let morning = Rules.ordered(g, now: t0, daily: true).map(\.name)
+        let later = Rules.ordered(g, now: t0 + 3600, daily: true).map(\.name)
+        let tomorrow = Rules.ordered(g, now: t0 + day, daily: true).map(\.name)
+        XCTAssertEqual(morning, later)
+        XCTAssertNotEqual(morning, tomorrow)
+        XCTAssertEqual(morning.first, "S5")
+        XCTAssertEqual(Set(morning).count, 8)
+        XCTAssertEqual(Rules.ordered(g, now: t0, daily: false).map(\.name), ["S5", "S0", "S1", "S2", "S3", "S4", "S6", "S7"])
+    }
 }

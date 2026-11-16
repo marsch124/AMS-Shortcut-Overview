@@ -49,6 +49,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let show = item("Show cards on the desktop", #selector(toggleCards))
         show.state = model.showCards ? .on : .off
         menu.addItem(show)
+        let daily = item("Today's shortcuts", #selector(toggleDaily))
+        daily.state = model.dailyPick ? .on : .off
+        menu.addItem(daily)
+        let quiz = item("Quiz me", #selector(toggleQuiz))
+        quiz.state = model.quiz ? .on : .off
+        menu.addItem(quiz)
         menu.addItem(.separator())
         let v = NSMenuItem(title: "Version \(Guide.version)", action: nil, keyEquivalent: "")
         v.isEnabled = false
@@ -64,6 +70,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func addShortcut() { openEditor(shortcut: nil, appName: "") }
     @objc private func toggleCards() { model.showCards.toggle(); desktop?.refresh() }
+    @objc private func toggleDaily() { model.dailyPick.toggle(); desktop?.refresh() }
+    @objc private func toggleQuiz() { model.quiz.toggle(); desktop?.refresh() }
     @objc private func quit() { NSApp.terminate(nil) }
 
     // MARK: Windows
@@ -102,6 +110,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
               let host = URL(string: s)?.host else { return }
         switch host {
         case "settings": openManage()
+        case "dailyOn", "dailyOff": model.dailyPick = host == "dailyOn"; desktop?.refresh()
+        case "quizOn", "quizOff": model.quiz = host == "quizOn"; desktop?.refresh()
         case "add": openEditor(shortcut: nil, appName: "")
         case "day", "night", "system":
             model.look = host

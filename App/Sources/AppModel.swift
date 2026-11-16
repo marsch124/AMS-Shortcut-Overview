@@ -10,6 +10,10 @@ final class AppModel: ObservableObject {
     @Published var now = Date()
     @AppStorage("showCards") var showCards = true
     @AppStorage("rowsPerCard") var rowsPerCard = 6
+    /// A fresh pick of shortcuts each day instead of list order.
+    @AppStorage("dailyPick") var dailyPick = false
+    /// Hide the keys until you point at the row.
+    @AppStorage("quiz") var quiz = false
     /// "system", "day" or "night" — for checks; normal use is "system".
     @AppStorage("look") var look = "system"
 
@@ -25,6 +29,10 @@ final class AppModel: ObservableObject {
     init() {
         load()
         timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.now = Date() }
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification,
+                                                          object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.now = Date() }
         }
     }
@@ -73,6 +81,8 @@ final class AppModel: ObservableObject {
     }
 
     // MARK: Questions
+
+    func cardRows(_ g: AppGroup) -> [Shortcut] { Rules.ordered(g, now: now, daily: dailyPick) }
 
     var visibleGroups: [AppGroup] {
         library.groups.filter { !Rules.visible($0, now: now).isEmpty }
