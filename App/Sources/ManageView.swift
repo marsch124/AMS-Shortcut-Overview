@@ -289,9 +289,36 @@ struct LookPage: View {
                 if !model.lastExport.isEmpty { Text(model.lastExport) }
                 if let problem = model.exportProblem { Text(problem).foregroundStyle(.red) }
             }
+            LabeledContent {
+                HStack(spacing: 12) {
+                    if model.undoFile != nil {
+                        Button("Undo") { model.offerUndo() }
+                            .buttonStyle(.borderless)
+                            .help("Puts back the list you had before the last bring-in. It asks first.")
+                            .accessibilityIdentifier("undoBringIn")
+                    }
+                    Button("Bring a list back in…") { model.chooseListToBringIn() }
+                        .buttonStyle(.borderless)
+                        .accessibilityIdentifier("bringListIn")
+                }
+            } label: {
+                Text("Bring an exported list back")
+                if !model.importNote.isEmpty { Text(model.importNote) }
+                if let problem = model.importProblem { Text(problem).foregroundStyle(.red) }
+            }
             LabeledContent("Version", value: Guide.version)
         }
         .formStyle(.grouped)
+        .confirmationDialog("Replace your list with this one?",
+                            isPresented: Binding(get: { model.pendingImport != nil },
+                                                 set: { if !$0 { model.pendingImport = nil } }),
+                            presenting: model.pendingImport) { _ in
+            Button("Replace my list") { model.bringInPending() }
+                .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { model.pendingImport = nil }
+        } message: { pending in
+            Text("The file \u{201C}\(pending.url.lastPathComponent)\u{201D} holds \(AppModel.counts(pending.library)). Your list now holds \(AppModel.counts(model.library)). It is kept as a safety copy first, so you can undo this.")
+        }
         .onChange(of: model.showCards) { _, _ in AppDelegate.shared.desktop?.refresh() }
         .onChange(of: model.rowsPerCard) { _, _ in AppDelegate.shared.desktop?.refresh() }
         .onChange(of: model.dailyPick) { _, _ in AppDelegate.shared.desktop?.refresh() }

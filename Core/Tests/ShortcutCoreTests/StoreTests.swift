@@ -110,6 +110,44 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(back.groups.map(\.id), l.groups.map(\.id))
     }
 
+    func testAFileThatIsNotAListIsRefused() throws {
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        let f = folder.appendingPathComponent("x.json")
+        for bad in ["hello", "{}", #"{"groups":[]}"#, #"{"groups":[{"shortcuts":[{"name":"a","keys":"A"}]}]}"#, #"[1,2,3]"#] {
+            try Data(bad.utf8).write(to: f)
+            XCTAssertThrowsError(try LibraryStore.readList(at: f), bad) {
+                XCTAssertEqual($0 as? LibraryStore.ImportError, .notAList)
+            }
+        }
+        XCTAssertThrowsError(try LibraryStore.readList(at: folder.appendingPathComponent("missing.json")))
+        try LibraryStore.export(lib("A", "B"), to: f)
+        XCTAssertEqual(try LibraryStore.readList(at: f).groups.map(\.name), ["A", "B"])
+    }
+
+    func testBringingAListInKeepsTheListFromBeforeAsItsOwnCopy() throws {
+        let mine = lib("Mine 1", "Mine 2", "Mine 3")
+        try store.save(mine, now: day(16), calendar: cal)
+        var other = lib("A", "B")
+        Rules.tick(&other.groups[0].shortcuts[0], now: day(10))
+        Rules.removeGroup(other.groups[1].id, in: &other, now: day(12))
+        let before = try store.replace(with: other, current: mine, now: day(16, hour: 15), calendar: cal)
+        XCTAssertEqual(before.lastPathComponent, "before-bringing-in-2026-11-16-150000.json")
+        XCTAssertEqual(names(before), ["Mine 1", "Mine 2", "Mine 3"])
+        let now = store.load().library!
+        // (Dates are kept to the second in the file, so compare with the list as a file holds it.)
+        XCTAssertEqual(now, try ShortcutLibrary.decode(other.encoded()), "the brought-in list reads back exactly")
+        XCTAssertEqual(now.groups[0].shortcuts[0].learnedAt, day(10))
+        XCTAssertNotNil(now.groups[1].removedAt)
+        // The "before" copy is not a dated copy: never cleared after 30 days, never used for recovery.
+        XCTAssertFalse(store.dailyCopyNames().contains(before.lastPathComponent))
+        // Undo = bring the "before" copy in; the list being left is kept in turn.
+        let back = try LibraryStore.readList(at: before)
+        let second = try store.replace(with: back, current: now, now: day(16, hour: 16), calendar: cal)
+        XCTAssertEqual(store.load().library?.groups.map(\.name), ["Mine 1", "Mine 2", "Mine 3"])
+        XCTAssertEqual(names(second), ["A", "B"])
+        XCTAssertThrowsError(try store.replace(with: ShortcutLibrary(), current: back, now: day(17), calendar: cal))
+    }
+
     func testRemovedMarksSurviveSavingAndLoading() throws {
         var l = lib("A", "B")
         Rules.removeGroup(l.groups[1].id, in: &l, now: day(16))

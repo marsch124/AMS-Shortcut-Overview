@@ -29,6 +29,14 @@ final class AppModel: ObservableObject {
     @AppStorage("lastExport") var lastExport = ""
     @Published private(set) var exportProblem: String?
 
+    /// A list file waiting for the "Replace your list with this one?" answer.
+    struct PendingImport { let url: URL; let library: ShortcutLibrary }
+    @Published var pendingImport: PendingImport?
+    @Published private(set) var importNote = ""
+    @Published private(set) var importProblem: String?
+    /// The "before" copy of the last bring-in, for Undo. Kept across restarts.
+    @AppStorage("lastBeforeFile") var lastBeforeFile = ""
+
     /// For checks: AMS_SHORTCUTS_FOLDER points the app at a test list instead of the real one.
     static let testFolder: URL? = ProcessInfo.processInfo.environment["AMS_SHORTCUTS_FOLDER"]
         .flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
@@ -138,6 +146,63 @@ final class AppModel: ObservableObject {
             exportProblem = nil
         } catch {
             exportProblem = "Could not export: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: Bring a list back in
+
+    static func counts(_ lib: ShortcutLibrary) -> String {
+        "\(lib.groups.count) apps and \(lib.groups.reduce(0) { $0 + $1.shortcuts.count }) shortcuts"
+    }
+
+    /// Asks which file, checks it, and then waits for the "Replace your list?" answer.
+    func chooseListToBringIn() {
+        let panel = NSOpenPanel()
+        panel.title = "Bring a list back in"
+        panel.message = "Choose a list you exported earlier."
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        offerList(at: url)
+    }
+
+    /// Checks a file and, if it is a list, puts the question. Changes nothing yet.
+    func offerList(at url: URL) {
+        do {
+            pendingImport = PendingImport(url: url, library: try LibraryStore.readList(at: url))
+            importProblem = nil
+        } catch {
+            pendingImport = nil
+            importNote = ""
+            importProblem = "This file is not a list from AMS Shortcut Overview. Nothing was changed."
+        }
+    }
+
+    /// The "before" copy of the last bring-in, if it still exists.
+    var undoFile: URL? {
+        guard !lastBeforeFile.isEmpty else { return nil }
+        let url = store.copies.appendingPathComponent(lastBeforeFile)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    func offerUndo() { if let url = undoFile { offerList(at: url) } }
+
+    /// "Replace my list": keeps the list as it is now as a "before" copy, then replaces it.
+    func bringInPending() {
+        guard let pending = pendingImport else { return }
+        pendingImport = nil
+        do {
+            let before = try store.replace(with: pending.library, current: library)
+            library = pending.library
+            now = Date()
+            saveProblem = nil
+            lastBeforeFile = before.lastPathComponent
+            let c = Self.counts(pending.library).replacingOccurrences(of: " and ", with: ", ")
+            importNote = "Brought in \(c). Your list from before is kept, press Undo to get it back."
+            importProblem = nil
+        } catch {
+            importProblem = "Could not bring the list in: \(error.localizedDescription) Nothing was changed."
         }
     }
 

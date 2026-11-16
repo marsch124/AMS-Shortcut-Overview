@@ -1,6 +1,6 @@
 # AMS Shortcut Overview — specification
 
-Version 0.5.1 (8), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
+Version 0.6 (9), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
 
 ## Purpose
 Help learn keyboard shortcuts by keeping the ones still being learned in sight on the desktop, one colour card per app.
@@ -91,7 +91,20 @@ Red line "Could not save your list" at the top while the last save failed (0.4).
 - The file holds the whole list: every app and every shortcut with all fields (learned date, recheck done, colour, order) and the removed ones (`removedAt`) too. Its form is the same as `shortcuts.json` (same encoder, ISO dates), so it reads back exactly as the list was.
 - After a successful save a grey caption under the row reads, for example, "Last export: 16 Nov 2026 at 14:05 · 5 apps, 40 shortcuts". The counts include removed apps and shortcuts. The date and counts are stored in the app's settings (UserDefaults), so the line stays after a restart. If writing fails, a red caption "Could not export: <reason>" shows instead.
 - Exporting only reads the list: it changes nothing in the list, makes no safety copy and can be done as often as wanted.
-- Not in 0.5: the app cannot read an export back in. The file is the user's own copy; restoring from it is left to a later version.
+- Not in 0.5: reading an export back in. That came in 0.6 (next section).
+
+## Bring a list back in (0.6)
+- Before 0.6 an export could not be read back. Now Settings has a new row "Bring an exported list back" with the button "Bring a list back in…", directly under the row "A copy to keep anywhere" (Export my list…).
+- The button opens the standard open panel (`NSOpenPanel`) titled "Bring a list back in". The user picks a file exported earlier (name like `AMS Shortcut Overview list 2026-11-16.json`). Cancel closes the panel and nothing changes.
+- The file is checked first. If it is not a list from this app, holds no apps, or an app in it has no name, a red caption under the row reads "This file is not a list from AMS Shortcut Overview. Nothing was changed." and nothing changes.
+- If the file is good, the app asks first: "Replace your list with this one?" The note names the file and gives both counts, for example: The file "AMS Shortcut Overview list 2026-11-16.json" holds 8 apps and 64 shortcuts. Your list now holds 5 apps and 40 shortcuts. It is kept as a safety copy first, so you can undo this. Buttons: "Replace my list" (coloured main button, Return) and "Cancel" (Escape).
+- "Replace my list" does three things in this order: (1) it saves the current list as its own file in the "Safety copies" folder, named `before-bringing-in-yyyy-MM-dd-HHmmss.json` (date and time), for example `before-bringing-in-2026-11-16-152233.json`; if that copy cannot be written, nothing is replaced; (2) it replaces the list with the one from the file: every app and shortcut, learned state, recheck dates, colours, order and the Removed page exactly as at export; (3) the cards on the desktop change at once.
+- It replaces, it does not mix: shortcuts added after the export are not in the brought-in list. They are in the "before" copy.
+- Afterwards a grey caption under the row reads, for example: Brought in 8 apps, 64 shortcuts. Your list from before is kept, press Undo to get it back.
+- "Undo": after a bring-in a second button "Undo" appears in the same row, left of "Bring a list back in…". It asks the same question for the "before" copy and puts the earlier list back. The list being left is kept as a new "before" copy, so Undo can itself be undone. The button stays after a restart, as long as that "before" file exists.
+- The `before-bringing-in-…` copies stay until the user clears them away; the 30-day clearing of the dated copies does not touch them, and the app never uses them by itself (not for repairing a damaged list).
+- Counts always include removed apps and shortcuts, as in the export caption.
+- Tests: 24 (before: 22). The two new ones check that a file that is not a list is refused, and that replacing keeps the list from before as its own copy and the new list reads back exactly.
 
 ## Checked with real clicks (0.5.1)
 Before 0.5.1 the screens were only checked from pictures. For 0.5.1 the app was tried with real clicks and mouse presses on a separate test list (the real list was not touched). Tried and working:
@@ -111,4 +124,4 @@ Registers itself as a login item on the first start (switch in Settings). Refres
 `amsshortcuts://settings | add | day | night | system | snapshot` — snapshot writes `cards-<look>.png` (and the open windows) to `~/Library/Caches/com.schabbauer.AMSShortcutOverview/`.
 
 ## Build
-`Tools/install.sh` (XcodeGen + xcodebuild, installs to `~/Applications`). Rules: `cd Core && swift test` (22 tests; 0.4 had 21 and before 0.4 there were 7: the earlier ones plus tests for weeks in a row, the Removed page, saving, loading and the safety copies, and in 0.5 one that checks an exported file reads back exactly as the list was, learned and removed ones included). The tests run automatically on GitHub after every change to the code (free, the repository is public). Icon: `Tools/make-icon.py`.
+`Tools/install.sh` (XcodeGen + xcodebuild, installs to `~/Applications`). Rules: `cd Core && swift test` (24 tests; 0.5 had 22, 0.4 had 21 and before 0.4 there were 7: the earlier ones plus tests for weeks in a row, the Removed page, saving, loading and the safety copies, in 0.5 one that checks an exported file reads back exactly as the list was, learned and removed ones included, and in 0.6 two: a file that is not a list is refused, and replacing keeps the list from before as its own copy and the new list reads back exactly). The tests run automatically on GitHub after every change to the code (free, the repository is public). Icon: `Tools/make-icon.py`.

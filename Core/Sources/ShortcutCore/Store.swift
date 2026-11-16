@@ -99,6 +99,40 @@ public struct LibraryStore {
         try lib.encoded().write(to: url, options: .atomic)
     }
 
+    // MARK: Bring a list back in
+
+    public enum ImportError: Error, Equatable { case notAList }
+
+    /// Reads a list file someone chose. Refused when it cannot be read, holds no apps,
+    /// or an app in it has no name (a file that is not one of this app's lists).
+    public static func readList(at url: URL) throws -> ShortcutLibrary {
+        guard let lib = good(url),
+              !lib.groups.contains(where: { $0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        else { throw ImportError.notAList }
+        return lib
+    }
+
+    /// "before-bringing-in-2026-11-16-152233.json" — the list as it was before a bring-in.
+    /// Not a "shortcuts-…" name on purpose: the 30-day clearing and the automatic recovery never touch it.
+    public static func beforeName(_ now: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: now)
+        return String(format: "before-bringing-in-%04d-%02d-%02d-%02d%02d%02d.json",
+                      c.year ?? 0, c.month ?? 0, c.day ?? 0, c.hour ?? 0, c.minute ?? 0, c.second ?? 0)
+    }
+
+    /// Replaces the list. First the current list is written as its own "before" file in
+    /// "Safety copies"; if that fails, nothing is replaced. Returns the "before" file.
+    @discardableResult
+    public func replace(with new: ShortcutLibrary, current: ShortcutLibrary,
+                        now: Date = Date(), calendar: Calendar = .current) throws -> URL {
+        if new.groups.isEmpty { throw ImportError.notAList }
+        try fm.createDirectory(at: copies, withIntermediateDirectories: true)
+        let before = copies.appendingPathComponent(Self.beforeName(now, calendar: calendar))
+        try current.encoded().write(to: before, options: .atomic)
+        try save(new, now: now, calendar: calendar)
+        return before
+    }
+
     /// The dated copies beyond the newest 30.
     public static func namesToDelete(_ names: [String], keep: Int = keepDays) -> [String] {
         Array(names.sorted(by: >).dropFirst(keep))

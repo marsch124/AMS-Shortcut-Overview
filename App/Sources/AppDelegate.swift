@@ -133,6 +133,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 .appendingPathComponent("com.schabbauer.AMSShortcutOverview", isDirectory: true)
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             model.export(to: dir.appendingPathComponent("export-check.json"))
+        case "bringin":   // for checks: offers the file the "export" link wrote, without the Open window
+            let file = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("com.schabbauer.AMSShortcutOverview/export-check.json")
+            openManage()
+            NotificationCenter.default.post(name: .showPage, object: "settings")
+            model.offerList(at: file)
         case "removed", "learned", "shortcuts", "settings-page":
             openManage()
             NotificationCenter.default.post(name: .showPage, object: host == "settings-page" ? "settings" : host)

@@ -8,6 +8,7 @@ A small Mac menu bar app that puts the keyboard shortcuts you are learning on yo
 - Counts your learned shortcuts per week and the weeks in a row.
 - Your list is safe: a safety copy, one dated copy per day for 30 days, and a warning if saving fails.
 - Export my list (Settings): one file with everything, saved wherever you like, as your own copy.
+- Bring a list back in (Settings, 0.6): read an exported file back, after a question, with your list from before kept as a safety copy and an Undo button.
 - Add your own from the menu bar or the + on a card; any app gets its own colour.
 - Day and night colours. Nothing leaves your Mac.
 
