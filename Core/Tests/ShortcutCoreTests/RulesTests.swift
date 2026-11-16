@@ -25,6 +25,19 @@ final class RulesTests: XCTestCase {
         XCTAssertEqual(Rules.visible(g, now: t0 + 20 * day).map(\.name), ["A", "B"])
     }
 
+    func testCountsTellTheListAndTheRemovedPageApart() {
+        let g = { (name: String, n: Int) in
+            AppGroup(name: name, colour: "teal", shortcuts: (0..<n).map { Shortcut(name: "S\($0)", keys: "A") })
+        }
+        var lib = ShortcutLibrary(groups: [g("One", 3), g("Two", 2)])
+        XCTAssertEqual(Rules.countWords(lib.groups), "2 apps and 5 shortcuts")
+        Rules.removeShortcut(lib.groups[0].shortcuts[0].id, in: &lib, now: t0)
+        XCTAssertEqual(Rules.countWords(lib.groups), "2 apps and 4 shortcuts, plus 1 shortcut on the Removed page")
+        Rules.removeGroup(lib.groups[1].id, in: &lib, now: t0)
+        XCTAssertEqual(Rules.countWords(lib.groups), "1 app and 2 shortcuts, plus 1 app and 3 shortcuts on the Removed page")
+        XCTAssertEqual(Rules.counts(lib.groups), Rules.Counts(apps: 1, shortcuts: 2, removedApps: 1, removedShortcuts: 3))
+    }
+
     func testKeyPartsAndClean() {
         XCTAssertEqual(Rules.keyParts("⌘⇧F"), ["⌘", "⇧", "F"])
         XCTAssertEqual(Rules.keyParts("⌥ Space"), ["⌥", "Space"])

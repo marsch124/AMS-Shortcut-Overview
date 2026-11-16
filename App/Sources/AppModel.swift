@@ -29,13 +29,18 @@ final class AppModel: ObservableObject {
     @AppStorage("lastExport") var lastExport = ""
     @Published private(set) var exportProblem: String?
 
-    /// A list file waiting for the "Replace your list with this one?" answer.
-    struct PendingImport { let url: URL; let library: ShortcutLibrary }
+    /// A list waiting for an answer: "Replace your list with this one?" for a file,
+    /// "Put your earlier list back?" for Undo.
+    struct PendingImport { let url: URL; let library: ShortcutLibrary; var isUndo = false }
     @Published var pendingImport: PendingImport?
+    /// Which question is asked. Kept while the question closes, so its words do not change on the way out.
+    @Published private(set) var askingUndo = false
     @Published private(set) var importNote = ""
     @Published private(set) var importProblem: String?
     /// The "before" copy of the last bring-in, for Undo. Kept across restarts.
     @AppStorage("lastBeforeFile") var lastBeforeFile = ""
+    /// True when that "before" copy was made by an Undo, so the Undo question names it rightly.
+    @AppStorage("lastBeforeWasUndo") var lastBeforeWasUndo = false
 
     /// For checks: AMS_SHORTCUTS_FOLDER points the app at a test list instead of the real one.
     static let testFolder: URL? = ProcessInfo.processInfo.environment["AMS_SHORTCUTS_FOLDER"]
@@ -140,9 +145,8 @@ final class AppModel: ObservableObject {
     func export(to url: URL) {
         do {
             try LibraryStore.export(library, to: url)
-            let shortcuts = library.groups.reduce(0) { $0 + $1.shortcuts.count }
             let when = Date().formatted(.dateTime.day().month(.abbreviated).year().hour().minute())
-            lastExport = "Last export: \(when) · \(library.groups.count) apps, \(shortcuts) shortcuts"
+            lastExport = "Last export: \(when) · \(Self.counts(library))"
             exportProblem = nil
         } catch {
             exportProblem = "Could not export: \(error.localizedDescription)"
@@ -151,8 +155,18 @@ final class AppModel: ObservableObject {
 
     // MARK: Bring a list back in
 
-    static func counts(_ lib: ShortcutLibrary) -> String {
-        "\(lib.groups.count) apps and \(lib.groups.reduce(0) { $0 + $1.shortcuts.count }) shortcuts"
+    /// "7 apps and 57 shortcuts, plus 1 app and 8 shortcuts on the Removed page" — the same words
+    /// in both questions, the "Brought in" line and the "Last export" line.
+    static func counts(_ lib: ShortcutLibrary) -> String { Rules.countWords(lib.groups) }
+
+    /// The note under "Replace your list with this one?" / "Put your earlier list back?".
+    func question(for pending: PendingImport) -> String {
+        let nowHolds = "Your list now holds \(Self.counts(library))."
+        if pending.isUndo {
+            let what = lastBeforeWasUndo ? "Undo" : "bring-in"
+            return "This is the list you had before the last \(what): \(Self.counts(pending.library)). \(nowHolds) It is kept as a safety copy first, so this can be undone too."
+        }
+        return "The file \u{201C}\(pending.url.lastPathComponent)\u{201D} holds \(Self.counts(pending.library)). \(nowHolds) It is kept as a safety copy first, so you can undo this."
     }
 
     /// Asks which file, checks it, and then waits for the "Replace your list?" answer.
@@ -168,14 +182,17 @@ final class AppModel: ObservableObject {
     }
 
     /// Checks a file and, if it is a list, puts the question. Changes nothing yet.
-    func offerList(at url: URL) {
+    func offerList(at url: URL, isUndo: Bool = false) {
         do {
-            pendingImport = PendingImport(url: url, library: try LibraryStore.readList(at: url))
+            let list = try LibraryStore.readList(at: url)
+            askingUndo = isUndo
+            pendingImport = PendingImport(url: url, library: list, isUndo: isUndo)
             importProblem = nil
         } catch {
             pendingImport = nil
             importNote = ""
-            importProblem = "This file is not a list from AMS Shortcut Overview. Nothing was changed."
+            importProblem = isUndo ? "Your earlier list could not be read. Nothing was changed."
+                : "This file is not a list from AMS Shortcut Overview. Nothing was changed."
         }
     }
 
@@ -186,9 +203,10 @@ final class AppModel: ObservableObject {
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
-    func offerUndo() { if let url = undoFile { offerList(at: url) } }
+    /// "Undo": asks "Put your earlier list back?" for the "before" copy. Changes nothing yet.
+    func offerUndo() { if let url = undoFile { offerList(at: url, isUndo: true) } }
 
-    /// "Replace my list": keeps the list as it is now as a "before" copy, then replaces it.
+    /// "Replace my list" / "Put it back": keeps the list as it is now as a "before" copy, then replaces it.
     func bringInPending() {
         guard let pending = pendingImport else { return }
         pendingImport = nil
@@ -198,11 +216,16 @@ final class AppModel: ObservableObject {
             now = Date()
             saveProblem = nil
             lastBeforeFile = before.lastPathComponent
-            let c = Self.counts(pending.library).replacingOccurrences(of: " and ", with: ", ")
-            importNote = "Brought in \(c). Your list from before is kept, press Undo to get it back."
+            lastBeforeWasUndo = pending.isUndo
+            let c = Self.counts(pending.library)
+            importNote = pending.isUndo
+                ? "Your earlier list is back: \(c). The list you had just now is kept, press Undo to return to it."
+                : "Brought in \(c). Your list from before is kept, press Undo to get it back."
             importProblem = nil
         } catch {
-            importProblem = "Could not bring the list in: \(error.localizedDescription) Nothing was changed."
+            importProblem = pending.isUndo
+                ? "Could not put your earlier list back: \(error.localizedDescription) Nothing was changed."
+                : "Could not bring the list in: \(error.localizedDescription) Nothing was changed."
         }
     }
 

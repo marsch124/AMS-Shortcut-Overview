@@ -113,6 +113,37 @@ public enum Rules {
         }
     }
 
+    /// How much a list holds: what is on the list, and apart from it what is on the Removed page.
+    public struct Counts: Equatable {
+        public var apps = 0, shortcuts = 0, removedApps = 0, removedShortcuts = 0
+    }
+
+    /// On the list: the apps every page shows, with their shortcuts that are not removed.
+    /// On the Removed page: the whole apps there, and every shortcut that stands there
+    /// (those of removed apps and the single removed ones).
+    public static func counts(_ groups: [AppGroup]) -> Counts {
+        let on = active(groups)
+        let shown = on.reduce(0) { $0 + $1.shortcuts.count }
+        let all = groups.reduce(0) { $0 + $1.shortcuts.count }
+        return Counts(apps: on.count, shortcuts: shown,
+                      removedApps: removedApps(groups).count, removedShortcuts: all - shown)
+    }
+
+    /// "7 apps and 57 shortcuts, plus 1 app and 8 shortcuts on the Removed page".
+    /// The Removed page is only named when something is on it.
+    public static func countWords(_ groups: [AppGroup]) -> String {
+        let c = counts(groups)
+        func apps(_ n: Int) -> String { n == 1 ? "1 app" : "\(n) apps" }
+        func shortcuts(_ n: Int) -> String { n == 1 ? "1 shortcut" : "\(n) shortcuts" }
+        var words = "\(apps(c.apps)) and \(shortcuts(c.shortcuts))"
+        if c.removedApps > 0 {
+            words += ", plus \(apps(c.removedApps)) and \(shortcuts(c.removedShortcuts)) on the Removed page"
+        } else if c.removedShortcuts > 0 {
+            words += ", plus \(shortcuts(c.removedShortcuts)) on the Removed page"
+        }
+        return words
+    }
+
     public static func removeShortcut(_ id: UUID, in lib: inout ShortcutLibrary, now: Date) {
         for g in lib.groups.indices {
             if let i = lib.groups[g].shortcuts.firstIndex(where: { $0.id == id }) {
