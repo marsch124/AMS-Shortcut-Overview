@@ -52,6 +52,15 @@ struct ShortcutsPage: View {
             HStack {
                 Text("Version \(Guide.version)").font(.caption).foregroundStyle(.secondary)
                 Spacer()
+                Menu("Add ready-made app") {
+                    ForEach(model.readyMadeMissing) { g in
+                        Button("\(g.name) (\(g.shortcuts.count) shortcuts)") { model.addReadyMade(g) }
+                    }
+                }
+                .fixedSize()
+                .disabled(model.readyMadeMissing.isEmpty)
+                .help(model.readyMadeMissing.isEmpty ? "Every ready-made app is on your list already" : "Add a card with 8 checked shortcuts")
+                .accessibilityIdentifier("addReadyMade")
                 Button("Add shortcut") { AppDelegate.shared.openEditor(shortcut: nil, appName: "") }
                     .buttonStyle(.borderedProminent)
                     .tint(CardColours.button("purple"))
@@ -72,6 +81,7 @@ struct ShortcutsPage: View {
 struct GroupHeader: View {
     @ObservedObject var model: AppModel
     let group: AppGroup
+    @State private var askRemove = false
 
     var body: some View {
         HStack(spacing: 6) {
@@ -88,8 +98,17 @@ struct GroupHeader: View {
             Spacer()
             Button("Move left") { model.moveGroup(group.id, by: -1) }.buttonStyle(.borderless)
             Button("Move right") { model.moveGroup(group.id, by: 1) }.buttonStyle(.borderless)
+            Button("Remove") { askRemove = true }.buttonStyle(.borderless)
+                .accessibilityIdentifier("removeApp-\(group.name)")
         }
         .font(.caption)
+        .confirmationDialog("Remove \(group.name) and its \(group.shortcuts.count) shortcuts?",
+                            isPresented: $askRemove) {
+            Button("Remove", role: .destructive) { model.removeGroup(group.id) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The card and all its shortcuts go, learned ones too.")
+        }
     }
 }
 
@@ -108,6 +127,10 @@ struct LearnedPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
+            VStack(alignment: .leading, spacing: 6) {
+            Text("This week: \(model.learnedThisWeek) learned · \(model.learnedInAll) learned in all")
+                .font(.callout).foregroundStyle(CardColours.accent("green"))
+                .accessibilityIdentifier("learnedThisWeek")
             List {
                 ForEach(groups) { g in
                     Section {
@@ -127,6 +150,7 @@ struct LearnedPage: View {
                         Text(g.name).font(.headline).foregroundStyle(CardColours.accent(g.colour))
                     }
                 }
+            }
             }
         }
     }

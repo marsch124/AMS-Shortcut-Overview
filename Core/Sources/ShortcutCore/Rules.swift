@@ -62,6 +62,27 @@ public enum Rules {
         colours.first { !used.contains($0) } ?? colours[used.count % colours.count]
     }
 
+    /// How many shortcuts were first ticked as learned in the current calendar week.
+    public static func learnedThisWeek(_ groups: [AppGroup], now: Date, calendar: Calendar = .current) -> Int {
+        guard let week = calendar.dateInterval(of: .weekOfYear, for: now) else { return 0 }
+        return groups.flatMap(\.shortcuts).filter { s in
+            guard let d = s.learnedAt else { return false }
+            return d >= week.start && d < week.end
+        }.count
+    }
+
+    /// Adds a ready-made app's card unless an app of that name is already there.
+    /// Fresh ids; its own colour if free, otherwise the next free one. Returns false when skipped.
+    @discardableResult
+    public static func addReadyMade(_ group: AppGroup, to lib: inout ShortcutLibrary, now: Date = Date()) -> Bool {
+        guard !lib.groups.contains(where: { $0.name.caseInsensitiveCompare(group.name) == .orderedSame }) else { return false }
+        let used = lib.groups.map(\.colour)
+        let colour = used.contains(group.colour) ? nextColour(used: used) : group.colour
+        let shortcuts = group.shortcuts.map { Shortcut(name: $0.name, keys: $0.keys, addedAt: now) }
+        lib.groups.append(AppGroup(name: group.name, colour: colour, shortcuts: shortcuts))
+        return true
+    }
+
     /// "⌘ ⇧ F" → ["⌘","⇧","F"]. Also splits "⌘⇧F" written without spaces.
     public static func keyParts(_ keys: String) -> [String] {
         let modifiers: Set<Character> = ["⌘", "⌥", "⌃", "⇧"]

@@ -53,4 +53,29 @@ final class RulesTests: XCTestCase {
         XCTAssertEqual(Set(morning).count, 8)
         XCTAssertEqual(Rules.ordered(g, now: t0, daily: false).map(\.name), ["S5", "S0", "S1", "S2", "S3", "S4", "S6", "S7"])
     }
+
+    func testLearnedThisWeekCountsOnlyTheCurrentWeek() {
+        var cal = Calendar(identifier: .gregorian); cal.firstWeekday = 2; cal.timeZone = TimeZone(identifier: "Europe/Stockholm")!
+        let wed = cal.date(from: DateComponents(year: 2026, month: 11, day: 18, hour: 12))!
+        let mon = cal.date(from: DateComponents(year: 2026, month: 11, day: 16, hour: 0, minute: 5))!
+        let lastSun = cal.date(from: DateComponents(year: 2026, month: 11, day: 15, hour: 23))!
+        let g = AppGroup(name: "A", colour: "blue", shortcuts: [
+            Shortcut(name: "a", keys: "A", learnedAt: mon),
+            Shortcut(name: "b", keys: "B", learnedAt: wed, recheckDone: true),
+            Shortcut(name: "c", keys: "C", learnedAt: lastSun),
+            Shortcut(name: "d", keys: "D")])
+        XCTAssertEqual(Rules.learnedThisWeek([g], now: wed, calendar: cal), 2)
+    }
+
+    func testAddReadyMadeSkipsExistingNameAndAvoidsTakenColour() {
+        var lib = ShortcutLibrary(groups: [AppGroup(name: "obsidian", colour: "blue", shortcuts: [Shortcut(name: "x", keys: "X")])])
+        let finder = AppGroup(name: "Finder", colour: "blue", shortcuts: [Shortcut(name: "New window", keys: "⌘ N", learnedAt: t0)])
+        XCTAssertFalse(Rules.addReadyMade(AppGroup(name: "Obsidian", colour: "purple"), to: &lib))
+        XCTAssertTrue(Rules.addReadyMade(finder, to: &lib))
+        XCTAssertFalse(Rules.addReadyMade(finder, to: &lib))
+        XCTAssertEqual(lib.groups.count, 2)
+        XCTAssertEqual(lib.groups[1].colour, "purple")
+        XCTAssertNil(lib.groups[1].shortcuts[0].learnedAt)
+        XCTAssertNotEqual(lib.groups[1].shortcuts[0].id, finder.shortcuts[0].id)
+    }
 }

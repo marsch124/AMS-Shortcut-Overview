@@ -1,6 +1,6 @@
 # AMS Shortcut Overview — specification
 
-Version 0.2 (2), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
+Version 0.3 (3), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
 
 ## Purpose
 Help learn keyboard shortcuts by keeping the ones still being learned in sight on the desktop, one colour card per app.
@@ -38,17 +38,26 @@ Seven: purple, coral, teal, blue, pink, amber, green. Day: pale fill (50), dark 
 - tick on recheck → `recheckDone` → learned for good, never shown again.
 - "Still learning" / "Bring back" → `learnedAt` = nil, `recheckDone` = false.
 
+## Learned this week (0.3)
+- `Rules.learnedThisWeek(groups, now:, calendar:)` counts the shortcuts whose `learnedAt` lies in the same week as `now`, using `calendar.dateInterval(of: .weekOfYear, for: now)`. The app's calendar is the Swedish one: the week starts on Monday and the count restarts at 0 each Monday.
+- A shortcut counts for the week of its first tick, whatever happened after: a later recheck tick (`recheckDone`) keeps `learnedAt`, so it still counts; "Bring back" / "Still learning" clears `learnedAt`, so it no longer counts.
+- Shown in the menu bar menu ("Learned this week: N") and on the Learned page (see below). "Now" is the same hourly-refreshed value as for rechecks.
+
 ## Window (menu bar → "Shortcuts and settings…")
-Five tabs, 560 × 520: Shortcuts (grouped by app, colour dot cycles colour, Move left/right reorders cards, Change per row, Add shortcut button, version), Learned (recheck date or "Learned for good", Bring back; empty-state text), Settings (show cards, shortcuts per card, Today's shortcuts, Quiz me, open at login, Show in Finder, version), How it works, What's new.
+Five tabs, 560 × 520: Shortcuts (grouped by app, colour dot cycles colour, Move left/right reorders cards, Remove per app, Change per row, "Add shortcut" and "Add ready-made app" buttons at the bottom, version), Learned (first line "This week: N learned · M learned in all", N = `Rules.learnedThisWeek`, M = all shortcuts currently on the page; then recheck date or "Learned for good", Bring back; empty-state text), Settings (show cards, shortcuts per card, Today's shortcuts, Quiz me, open at login, Show in Finder, version), How it works, What's new.
+
+## Ready-made apps and Remove (0.3)
+- "Add ready-made app" (bottom of the Shortcuts page, next to "Add shortcut") is a menu of the ready-made apps from `Starter.json` that are not on the list yet (name compared ignoring case). Picking one calls `Rules.addReadyMade(_ group:, to: library)`: skipped if an app of that name is already there (any case); gives the group and its shortcuts fresh ids; colour = the group's own colour if free, else the next free colour. If all are on the list the button is greyed out and its tooltip says "Every ready-made app is on your list already".
+- "Remove" (app heading, next to Move left / Move right) asks "Remove <app> and its N shortcuts?" with Cancel and Remove. Remove deletes the group and all its shortcuts, learned ones included, and saves (the safety copy of the previous file is made as for every save). A removed ready-made app can be added again, fresh (nothing learned).
 
 ## Editor (Cancel / Save, Escape = Cancel, Return = Save)
 Fields: App (text + "Pick" menu of existing apps), What it does, Keys (text + ⌘ ⌥ ⌃ ⇧ buttons), "Looks like" preview. Errors: empty app, name or keys. Keys are tidied (one space between keys, single letters upper case). A new app name makes a new card. Existing shortcuts keep their place; Delete removes it (an app with no shortcuts left is removed).
 
 ## Menu bar menu
-Add shortcut… (⌘N), Shortcuts and settings… (⌘,), Show cards on the desktop (tick), Today's shortcuts (tick), Quiz me (tick), Version, Quit. Icon: the AMS Icon Library "keycap" drawing (a keyboard key, 24-point grid, 1.9 stroke, round ends, no fill) as a template image; the app icon is the same keycap, white on a flat calm background. Replaces the old door-key "keys" icon of 0.1.
+Add shortcut… (⌘N), Shortcuts and settings… (⌘,), Show cards on the desktop (tick), Today's shortcuts (tick), Quiz me (tick), "Learned this week: N" (grey, disabled info line, just above Version), Version, Quit. Icon: the AMS Icon Library "keycap" drawing (a keyboard key, 24-point grid, 1.9 stroke, round ends, no fill) as a template image; the app icon is the same keycap, white on a flat calm background. Replaces the old door-key "keys" icon of 0.1.
 
 ## Data
-`~/Library/Application Support/AMS Shortcut Overview/shortcuts.json` (ISO dates, tolerant decoding: unknown fields ignored, missing fields defaulted). Before each save the previous file is copied to `shortcuts-safety-copy.json`. Unreadable file → loads the safety copy; if none, the file is moved aside (`shortcuts-unreadable-<time>.json`), never overwritten. First start: `Starter.json` from the app (8 each for Obsidian, Raycast, Fusion). Personal lists never go into the repository.
+`~/Library/Application Support/AMS Shortcut Overview/shortcuts.json` (ISO dates, tolerant decoding: unknown fields ignored, missing fields defaulted). Before each save the previous file is copied to `shortcuts-safety-copy.json`. Unreadable file → loads the safety copy; if none, the file is moved aside (`shortcuts-unreadable-<time>.json`), never overwritten. `Starter.json` in the app holds all 6 ready-made apps, 8 shortcuts each: Obsidian (purple), Raycast (coral), Fusion (teal), Finder (blue), Xcode (amber), Safari (green). First start (no file): the list is the first 5 of them (Obsidian, Raycast, Fusion, Finder, Xcode; 40 shortcuts); Safari is only added from "Add ready-made app". One-time 0.3 addition: on the first start of 0.3 with an existing list, Finder and Xcode are added through `Rules.addReadyMade` (so only if no app of that name exists; nothing else changes), guarded by the UserDefaults flag `addedFinderXcode03`, set after the first run so it never repeats (a removed Finder or Xcode stays removed). Personal lists never go into the repository.
 
 ## Start
 Registers itself as a login item on the first start (switch in Settings). Refreshes "now" every hour so rechecks appear by themselves.
@@ -57,4 +66,4 @@ Registers itself as a login item on the first start (switch in Settings). Refres
 `amsshortcuts://settings | add | day | night | system | snapshot` — snapshot writes `cards-<look>.png` (and the open windows) to `~/Library/Caches/com.schabbauer.AMSShortcutOverview/`.
 
 ## Build
-`Tools/install.sh` (XcodeGen + xcodebuild, installs to `~/Applications`). Rules: `cd Core && swift test` (5 tests, the new one covers the daily order). Icon: `Tools/make-icon.py`.
+`Tools/install.sh` (XcodeGen + xcodebuild, installs to `~/Applications`). Rules: `cd Core && swift test` (7 tests: the 5 earlier ones, which include the daily order, plus one for `Rules.learnedThisWeek` and one for `Rules.addReadyMade`). Icon: `Tools/make-icon.py`.

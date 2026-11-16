@@ -26,8 +26,12 @@ final class AppModel: ObservableObject {
 
     private var timer: Timer?
 
+    /// Apps a fresh install starts with; the last ready-made one (Safari) waits in "Add ready-made app".
+    static let firstStartApps = ["Obsidian", "Raycast", "Fusion", "Finder", "Xcode"]
+
     init() {
         load()
+        addFinderAndXcodeOnce()
         timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.now = Date() }
         }
@@ -57,11 +61,28 @@ final class AppModel: ObservableObject {
         }
     }
 
-    static func starter() -> ShortcutLibrary {
+    /// The ready-made apps that come with the app (Starter.json), 8 checked shortcuts each.
+    static let readyMade: [AppGroup] = {
         guard let url = Bundle.main.url(forResource: "Starter", withExtension: "json"),
               let data = try? Data(contentsOf: url),
-              let lib = try? ShortcutLibrary.decode(data) else { return ShortcutLibrary() }
+              let lib = try? ShortcutLibrary.decode(data) else { return [] }
+        return lib.groups
+    }()
+
+    static func starter() -> ShortcutLibrary {
+        var lib = ShortcutLibrary()
+        for g in readyMade where firstStartApps.contains(g.name) { Rules.addReadyMade(g, to: &lib) }
         return lib
+    }
+
+    /// 0.3: Finder and Xcode join an existing list once (skipped if an app of that name is there).
+    private func addFinderAndXcodeOnce() {
+        let flag = "addedFinderXcode03"
+        guard !UserDefaults.standard.bool(forKey: flag) else { return }
+        UserDefaults.standard.set(true, forKey: flag)
+        let new = Self.readyMade.filter { ["Finder", "Xcode"].contains($0.name) }
+        let t = now
+        change { lib in for g in new { Rules.addReadyMade(g, to: &lib, now: t) } }
     }
 
     private func save() {
@@ -89,6 +110,15 @@ final class AppModel: ObservableObject {
     }
 
     func status(_ s: Shortcut) -> ShortcutStatus { Rules.status(s, now: now) }
+
+    var learnedThisWeek: Int { Rules.learnedThisWeek(library.groups, now: Date()) }
+
+    var learnedInAll: Int { library.groups.reduce(0) { $0 + Rules.learnedCount($1, now: now) } }
+
+    /// Ready-made apps not on the list yet.
+    var readyMadeMissing: [AppGroup] {
+        Self.readyMade.filter { r in !library.groups.contains { $0.name.caseInsensitiveCompare(r.name) == .orderedSame } }
+    }
 
     // MARK: Changes
 
@@ -146,6 +176,16 @@ final class AppModel: ObservableObject {
             for g in lib.groups.indices { lib.groups[g].shortcuts.removeAll { $0.id == id } }
             lib.groups.removeAll { $0.shortcuts.isEmpty }
         }
+    }
+
+    func addReadyMade(_ g: AppGroup) {
+        let t = now
+        change { lib in Rules.addReadyMade(g, to: &lib, now: t) }
+    }
+
+    /// Removes an app's card with all its shortcuts (the safety copy keeps the list before).
+    func removeGroup(_ id: UUID) {
+        change { lib in lib.groups.removeAll { $0.id == id } }
     }
 
     func setColour(_ colour: String, group: UUID) {

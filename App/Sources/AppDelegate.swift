@@ -56,6 +56,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         quiz.state = model.quiz ? .on : .off
         menu.addItem(quiz)
         menu.addItem(.separator())
+        let week = NSMenuItem(title: "Learned this week: \(model.learnedThisWeek)", action: nil, keyEquivalent: "")
+        week.isEnabled = false
+        menu.addItem(week)
         let v = NSMenuItem(title: "Version \(Guide.version)", action: nil, keyEquivalent: "")
         v.isEnabled = false
         menu.addItem(v)
