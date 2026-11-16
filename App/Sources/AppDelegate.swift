@@ -21,7 +21,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     override init() { super.init(); AppDelegate.shared = self }
 
     func applicationDidFinishLaunching(_ note: Notification) {
+        // A saved place in the menu bar (pt from the right edge): between Mic Check (177) and
+        // Deck Mate (266), right of Tidy Bar's line, so it always shows and never sits behind the notch.
+        let placeKey = "NSStatusItem Preferred Position shortcutOverview"
+        if UserDefaults.standard.object(forKey: placeKey) == nil { UserDefaults.standard.set(222, forKey: placeKey) }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem.autosaveName = "shortcutOverview"
         statusItem.button?.image = keysMenuBarImage()
         statusItem.button?.setAccessibilityLabel("AMS Shortcut Overview")
         let menu = NSMenu()

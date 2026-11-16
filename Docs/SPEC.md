@@ -1,6 +1,6 @@
 # AMS Shortcut Overview — specification
 
-Version 0.3.1 (4), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
+Version 0.3.2 (5), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
 
 ## Purpose
 Help learn keyboard shortcuts by keeping the ones still being learned in sight on the desktop, one colour card per app.
@@ -54,6 +54,7 @@ Five tabs, 560 × 520: Shortcuts (grouped by app, colour dot cycles colour, Move
 Fields: App (text + "Pick" menu of existing apps), What it does, Keys (text + ⌘ ⌥ ⌃ ⇧ buttons), "Looks like" preview. Errors: empty app, name or keys. Keys are tidied (one space between keys, single letters upper case). A new app name makes a new card. Existing shortcuts keep their place; Delete removes it (an app with no shortcuts left is removed).
 
 ## Menu bar menu
+Status item `autosaveName` "shortcutOverview"; first start writes `NSStatusItem Preferred Position shortcutOverview` = 222 (pt from the right; Tidy Bar drawer 40, Mic Check 177, Deck Mate 266, Tidy Bar line 380) so the icon is on the always-shown side and right of the notch. ⌘-drag moves are remembered.
 Add shortcut… (⌘N), Shortcuts and settings… (⌘,), Show cards on the desktop (tick), Today's shortcuts (tick), Quiz me (tick), "Learned this week: N" (grey, disabled info line, just above Version), Version, Quit. Icon: the AMS Icon Library "keycap" drawing (a keyboard key, 24-point grid, 1.9 stroke, round ends, no fill) as a template image; the app icon is the same keycap, white on a flat calm background. Replaces the old door-key "keys" icon of 0.1.
 
 ## Data
