@@ -136,7 +136,7 @@ struct AppCard: View {
                 TickCircle(done: done, colour: c.mark).frame(width: 14, height: 14).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(recheck ? "Still know it? Tick to hide it for good" : "Tick when you know it")
+            .help(recheck ? "Still know it? Tick to stop the rechecks. It stays in your list." : "Tick when you know it")
             .accessibilityIdentifier("tick-\(s.name)")
 
             Text(s.name).font(.callout).foregroundStyle(c.text).lineLimit(1)

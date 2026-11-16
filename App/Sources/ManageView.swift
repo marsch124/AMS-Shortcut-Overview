@@ -157,7 +157,7 @@ struct LearnedPage: View {
 
     private func when(_ s: Shortcut) -> String {
         guard let d = s.learnedAt else { return "" }
-        if s.recheckDone { return "Learned for good" }
+        if s.recheckDone { return "Learned, no more rechecks" }
         let due = Calendar.current.date(byAdding: .day, value: Rules.recheckAfterDays, to: d) ?? d
         return "Recheck on \(due.formatted(.dateTime.day().month(.abbreviated)))"
     }

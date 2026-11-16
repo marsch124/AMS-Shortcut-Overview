@@ -301,7 +301,7 @@ function renderStage() {
         <div class="lrow st">… ${Math.max(0, c.rows.length - 2)} more</div>`).join('');
     } else if (S.tab === 'learned') {
       pane = S.learnedList.length ? `<div class="week" data-t="weekline">This week: ${S.week} learned · ${S.learnedList.length} learned in all</div>` +
-        S.learnedList.map(l => `<div class="lrow">${esc(l.n)}<span class="st">${l.good ? 'Learned for good' : 'Recheck on 30 Nov'}</span><span class="keys">${caps(l.k)}</span><span style="color:var(--purple-mark)">Bring back</span></div>`).join('')
+        S.learnedList.map(l => `<div class="lrow">${esc(l.n)}<span class="st">${l.good ? 'Learned, no more rechecks' : 'Recheck on 30 Nov'}</span><span class="keys">${caps(l.k)}</span><span style="color:var(--purple-mark)">Bring back</span></div>`).join('')
         : '<p style="text-align:center;color:var(--muted);margin-top:40px">Nothing learned yet</p>';
     } else {
       pane = `<div class="lrow">Show the cards on the desktop<span class="keys">On</span></div><div class="lrow">Shortcuts per card: 6</div>
@@ -433,8 +433,9 @@ const LESSONS = [
   { title: 'Ticking off', icon: 'stopwatch', steps: [
     { kind: 'try', head: 'You know one? Tick it', text: 'You know Quick switcher (⌘ O). Click its circle.', target: 'tick-Quick switcher', wait: 'tick', ok: 'Ticked. It is crossed out and leaves the card. The card now says "1 learned".' },
     { kind: 'look', head: 'Two weeks later: a recheck', text: 'After 14 days it comes back once, at the top, with a "Recheck" label.', setup: () => { const c = S.cards[0]; if (!c.rows.some(r => r.recheck)) { c.rows.unshift({ n: 'Quick switcher', k: '⌘ O', recheck: true }); c.learned = Math.max(0, c.learned - 1); } }, target: 'row-Quick switcher' },
-    { kind: 'try', head: 'Still know it?', text: 'Tick it again and it is gone for good. (Forgot it? On your Mac, right-click the row and choose "Still learning".)', target: 'tick-Quick switcher', wait: 'tick', ok: 'Gone for good. You find it on the Learned page.' },
+    { kind: 'try', head: 'Still know it?', text: 'Tick it again: no more rechecks, and it leaves the card. (Forgot it? On your Mac, right-click the row and choose "Still learning".)', target: 'tick-Quick switcher', wait: 'tick', ok: 'Hidden from the card, but still in your list: it waits on the Learned page, and "Bring back" puts it on the card again.' },
     { kind: 'check', head: 'Quick check', text: 'When does a ticked shortcut come back?', answers: ['Every morning', 'Once, after two weeks', 'Never'], right: 1, ok: 'Right: once, as a recheck.' },
+    { kind: 'check', head: 'Quick check', text: 'You ticked a shortcut and it left the card. Is it deleted?', answers: ['Yes, it is gone', 'No, it is only hidden and stays in your list', 'Only after two weeks'], right: 1, ok: 'Right. Ticking never deletes. Only Delete or Remove does, and only when you choose it.' },
   ]},
   { title: 'Quiz me', icon: 'glasses', steps: [
     { kind: 'try', head: 'Open the menu bar icon', text: 'Click the keyboard-key icon at the top right of the screen.', target: 'kicon', wait: 'menu', ok: 'This menu has the switches.' },

@@ -1,6 +1,6 @@
 # AMS Shortcut Overview — specification
 
-Version 0.3 (3), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
+Version 0.3.1 (4), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
 
 ## Purpose
 Help learn keyboard shortcuts by keeping the ones still being learned in sight on the desktop, one colour card per app.
@@ -35,7 +35,7 @@ Seven: purple, coral, teal, blue, pink, amber, green. Day: pale fill (50), dark 
 - learning: never ticked → shown.
 - tick while learning → `learnedAt` = now → hidden.
 - 14 days after `learnedAt` → recheck → shown again at the top with "Recheck".
-- tick on recheck → `recheckDone` → learned for good, never shown again.
+- tick on recheck → `recheckDone` → no more rechecks; hidden from the card but KEPT in the list (Shortcuts + Learned pages, "Learned, no more rechecks"); "Bring back" restores it. Ticking never deletes; only Delete (editor) and Remove (app) delete.
 - "Still learning" / "Bring back" → `learnedAt` = nil, `recheckDone` = false.
 
 ## Learned this week (0.3)
