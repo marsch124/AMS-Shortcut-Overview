@@ -1,0 +1,29 @@
+{"version":1,"groups":[
+ {"name":"Obsidian","colour":"purple","shortcuts":[
+  {"name":"Quick switcher","keys":"⌘ O"},
+  {"name":"Command palette","keys":"⌘ P"},
+  {"name":"Search all files","keys":"⌘ ⇧ F"},
+  {"name":"New note","keys":"⌘ N"},
+  {"name":"Toggle reading view","keys":"⌘ E"},
+  {"name":"Insert link","keys":"⌘ K"},
+  {"name":"Go back","keys":"⌘ ⌥ ←"},
+  {"name":"Open settings","keys":"⌘ ,"}]},
+ {"name":"Raycast","colour":"coral","shortcuts":[
+  {"name":"Action panel","keys":"⌘ K"},
+  {"name":"Open settings","keys":"⌘ ,"},
+  {"name":"Go back","keys":"Esc"},
+  {"name":"Return to root","keys":"⌘ Esc"},
+  {"name":"Add to favourites","keys":"⌘ F"},
+  {"name":"Quick Look","keys":"⌘ Y"},
+  {"name":"Send to AI Chat","keys":"⌘ J"},
+  {"name":"Reveal in Finder","keys":"⌘ ⇧ O"}]},
+ {"name":"Fusion","colour":"teal","shortcuts":[
+  {"name":"Line","keys":"L"},
+  {"name":"Circle","keys":"C"},
+  {"name":"Rectangle","keys":"R"},
+  {"name":"Sketch dimension","keys":"D"},
+  {"name":"Extrude","keys":"E"},
+  {"name":"Fillet","keys":"F"},
+  {"name":"Press pull","keys":"Q"},
+  {"name":"Move","keys":"M"}]}
+]}

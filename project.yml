@@ -1,0 +1,48 @@
+name: AMSShortcutOverview
+options:
+  bundleIdPrefix: com.schabbauer
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+packages:
+  ShortcutCore:
+    path: Core
+targets:
+  AMSShortcutOverview:
+    type: application
+    platform: macOS
+    sources:
+      - App/Sources
+      - App/Resources
+    info:
+      path: App/Config/Info.plist
+      properties:
+        CFBundleDisplayName: AMS Shortcut Overview
+        CFBundleShortVersionString: "0.1"
+        CFBundleVersion: "1"
+        CFBundleIconFile: AppIcon
+        LSUIElement: true
+        CFBundleURLTypes:
+          - CFBundleURLName: com.schabbauer.AMSShortcutOverview
+            CFBundleURLSchemes: [amsshortcuts]
+        LSApplicationCategoryType: public.app-category.productivity
+    settings:
+      base:
+        PRODUCT_NAME: AMS Shortcut Overview
+        PRODUCT_BUNDLE_IDENTIFIER: com.schabbauer.AMSShortcutOverview
+        SWIFT_VERSION: "5.0"
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: Apple Development
+        DEVELOPMENT_TEAM: D24ENP83QQ
+        ENABLE_HARDENED_RUNTIME: NO
+    dependencies:
+      - package: ShortcutCore
+schemes:
+  AMS Shortcut Overview:
+    build:
+      targets:
+        AMSShortcutOverview: all
+    run:
+      config: Release
