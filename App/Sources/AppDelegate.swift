@@ -35,7 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         desktop = DesktopController(model: model)
 
-        if !UserDefaults.standard.bool(forKey: "didFirstStart") {
+        if AppModel.testFolder == nil, !UserDefaults.standard.bool(forKey: "didFirstStart") {
             UserDefaults.standard.set(true, forKey: "didFirstStart")
             try? SMAppService.mainApp.register()
         }
@@ -48,6 +48,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
+        if model.saveProblem != nil {
+            let warn = NSMenuItem(title: "Could not save your list", action: #selector(openManage), keyEquivalent: "")
+            warn.target = self
+            warn.attributedTitle = NSAttributedString(string: "Could not save your list",
+                                                      attributes: [.foregroundColor: NSColor.systemRed])
+            menu.addItem(warn)
+            menu.addItem(.separator())
+        }
         menu.addItem(item("Add shortcut…", #selector(addShortcut), key: "n"))
         menu.addItem(item("Shortcuts and settings…", #selector(openManage), key: ","))
         menu.addItem(.separator())
@@ -61,7 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         quiz.state = model.quiz ? .on : .off
         menu.addItem(quiz)
         menu.addItem(.separator())
-        let week = NSMenuItem(title: "Learned this week: \(model.learnedThisWeek)", action: nil, keyEquivalent: "")
+        let week = NSMenuItem(title: "Learned this week: \(model.learnedThisWeek)\(model.streakWords)", action: nil, keyEquivalent: "")
         week.isEnabled = false
         menu.addItem(week)
         let v = NSMenuItem(title: "Version \(Guide.version)", action: nil, keyEquivalent: "")
@@ -118,6 +126,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
               let host = URL(string: s)?.host else { return }
         switch host {
         case "settings": openManage()
+        case "removed", "learned", "shortcuts":
+            openManage()
+            NotificationCenter.default.post(name: .showPage, object: host)
         case "dailyOn", "dailyOff": model.dailyPick = host == "dailyOn"; desktop?.refresh()
         case "quizOn", "quizOff": model.quiz = host == "quizOn"; desktop?.refresh()
         case "add": openEditor(shortcut: nil, appName: "")
@@ -142,4 +153,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         default: break
         }
     }
+}
+
+extension Notification.Name {
+    /// For checks: amsshortcuts://removed | learned | shortcuts opens the window on that page.
+    static let showPage = Notification.Name("showPage")
 }

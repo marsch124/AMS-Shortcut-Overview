@@ -8,16 +8,40 @@ struct ManageView: View {
     @State private var page = "shortcuts"
 
     var body: some View {
+        VStack(spacing: 6) {
+            if let problem = model.saveProblem {
+                Text(problem).font(.callout).foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("saveProblem")
+            }
+            if let notice = model.restoreNotice {
+                HStack(alignment: .top) {
+                    Text(notice).font(.callout).foregroundStyle(CardColours.accent("amber"))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button("OK") { model.restoreNotice = nil }
+                }
+                .accessibilityIdentifier("restoreNotice")
+            }
+            pages
+        }
+        .padding(12)
+        .frame(width: 600, height: 520)
+        .accessibilityIdentifier("manageWindow")
+        .onReceive(NotificationCenter.default.publisher(for: .showPage)) { note in
+            if let name = note.object as? String { page = name }
+        }
+    }
+
+    private var pages: some View {
         TabView(selection: $page) {
             ShortcutsPage(model: model).tabItem { Text("Shortcuts") }.tag("shortcuts")
             LearnedPage(model: model).tabItem { Text("Learned") }.tag("learned")
+            RemovedPage(model: model).tabItem { Text("Removed") }.tag("removed")
             LookPage(model: model).tabItem { Text("Settings") }.tag("settings")
             GuidePage(sections: Guide.howItWorks).tabItem { Text("How it works") }.tag("guide")
             NewsPage().tabItem { Text("What's new") }.tag("news")
         }
-        .padding(12)
-        .frame(width: 560, height: 520)
-        .accessibilityIdentifier("manageWindow")
     }
 }
 
@@ -29,7 +53,7 @@ struct ShortcutsPage: View {
     var body: some View {
         VStack(spacing: 8) {
             List {
-                ForEach(model.library.groups) { g in
+                ForEach(model.groups) { g in
                     Section {
                         ForEach(g.shortcuts) { s in
                             HStack(spacing: 8) {
@@ -102,12 +126,11 @@ struct GroupHeader: View {
                 .accessibilityIdentifier("removeApp-\(group.name)")
         }
         .font(.caption)
-        .confirmationDialog("Remove \(group.name) and its \(group.shortcuts.count) shortcuts?",
-                            isPresented: $askRemove) {
-            Button("Remove", role: .destructive) { model.removeGroup(group.id) }
+        .confirmationDialog("Remove \(group.name) from the desktop?", isPresented: $askRemove) {
+            Button("Remove") { model.removeGroup(group.id) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The card and all its shortcuts go, learned ones too.")
+            Text("The card and its \(group.shortcuts.count) shortcuts move to the Removed page. Bring them back from there any time.")
         }
     }
 }
@@ -118,7 +141,7 @@ struct LearnedPage: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        let groups = model.library.groups.filter { g in g.shortcuts.contains { model.status($0) == .learned } }
+        let groups = model.groups.filter { g in g.shortcuts.contains { model.status($0) == .learned } }
         if groups.isEmpty {
             VStack(spacing: 6) {
                 Text("Nothing learned yet").font(.headline)
@@ -128,7 +151,7 @@ struct LearnedPage: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-            Text("This week: \(model.learnedThisWeek) learned · \(model.learnedInAll) learned in all")
+            Text("This week: \(model.learnedThisWeek) learned · \(model.learnedInAll) learned in all\(model.streakWords)")
                 .font(.callout).foregroundStyle(CardColours.accent("green"))
                 .accessibilityIdentifier("learnedThisWeek")
             List {
@@ -160,6 +183,71 @@ struct LearnedPage: View {
         if s.recheckDone { return "Learned, no more rechecks" }
         let due = Calendar.current.date(byAdding: .day, value: Rules.recheckAfterDays, to: d) ?? d
         return "Recheck on \(due.formatted(.dateTime.day().month(.abbreviated)))"
+    }
+}
+
+// MARK: Removed
+
+/// Everything taken off the list. Nothing is ever deleted; it waits here to be brought back.
+struct RemovedPage: View {
+    @ObservedObject var model: AppModel
+
+    var body: some View {
+        let apps = model.removedApps
+        let singles = model.removedShortcuts
+        if apps.isEmpty && singles.isEmpty {
+            VStack(spacing: 6) {
+                Text("Nothing removed").font(.headline)
+                Text("When you remove a shortcut or a whole app, it moves here instead of being deleted. Bring it back any time.")
+                    .multilineTextAlignment(.center).foregroundStyle(.secondary).frame(maxWidth: 380)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Nothing is ever deleted. Bring back what you want to see again.")
+                    .font(.callout).foregroundStyle(CardColours.accent("coral"))
+                List {
+                    ForEach(apps) { g in
+                        Section {
+                            ForEach(g.shortcuts) { s in row(s, in: g, button: false) }
+                        } header: {
+                            HStack {
+                                Text(g.name).font(.headline).foregroundStyle(CardColours.accent(g.colour))
+                                Text("whole app, \(g.shortcuts.count) shortcuts").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Bring back app") { model.bringBackGroup(g.id) }
+                                    .buttonStyle(.borderedProminent).controlSize(.small)
+                                    .tint(CardColours.button(g.colour))
+                                    .accessibilityIdentifier("bringBackApp-\(g.name)")
+                            }
+                        }
+                    }
+                    ForEach(singles) { g in
+                        Section {
+                            ForEach(g.shortcuts) { s in row(s, in: g, button: true) }
+                        } header: {
+                            Text(g.name).font(.headline).foregroundStyle(CardColours.accent(g.colour))
+                        }
+                    }
+                }
+                .accessibilityIdentifier("removedList")
+            }
+        }
+    }
+
+    private func row(_ s: Shortcut, in g: AppGroup, button: Bool) -> some View {
+        HStack(spacing: 8) {
+            Text(s.name)
+            Spacer()
+            let c = CardColours.of(g.colour, dark: false)
+            KeyCaps(keys: s.keys, fill: c.fill, text: c.title)
+            if button {
+                Button("Bring back") { model.bringBackRemoved(s.id) }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(CardColours.accent(g.colour))
+                    .accessibilityIdentifier("bringBack-\(s.name)")
+            }
+        }
     }
 }
 

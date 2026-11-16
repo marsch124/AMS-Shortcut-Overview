@@ -8,17 +8,20 @@ public struct Shortcut: Codable, Identifiable, Equatable {
     public var keys: String
     /// When it was ticked as learned. nil = still learning.
     public var learnedAt: Date?
-    /// The one recheck after two weeks was passed: hidden for good.
+    /// The one recheck after two weeks was passed: no more rechecks. It stays in the list.
     public var recheckDone: Bool
     public var addedAt: Date
+    /// Moved to the Removed page: hidden everywhere else, never deleted. nil = on the list.
+    public var removedAt: Date?
 
     public init(id: UUID = UUID(), name: String, keys: String, learnedAt: Date? = nil,
-                recheckDone: Bool = false, addedAt: Date = Date()) {
+                recheckDone: Bool = false, addedAt: Date = Date(), removedAt: Date? = nil) {
         self.id = id; self.name = name; self.keys = keys
         self.learnedAt = learnedAt; self.recheckDone = recheckDone; self.addedAt = addedAt
+        self.removedAt = removedAt
     }
 
-    enum CodingKeys: String, CodingKey { case id, name, keys, learnedAt, recheckDone, addedAt }
+    enum CodingKeys: String, CodingKey { case id, name, keys, learnedAt, recheckDone, addedAt, removedAt }
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
         id = (try? c.decodeIfPresent(UUID.self, forKey: .id)) ?? UUID()
@@ -27,6 +30,7 @@ public struct Shortcut: Codable, Identifiable, Equatable {
         learnedAt = try? c.decodeIfPresent(Date.self, forKey: .learnedAt)
         recheckDone = (try? c.decodeIfPresent(Bool.self, forKey: .recheckDone)) ?? false
         addedAt = (try? c.decodeIfPresent(Date.self, forKey: .addedAt)) ?? Date()
+        removedAt = try? c.decodeIfPresent(Date.self, forKey: .removedAt)
     }
 }
 
@@ -36,18 +40,22 @@ public struct AppGroup: Codable, Identifiable, Equatable {
     public var name: String
     public var colour: String
     public var shortcuts: [Shortcut]
+    /// The whole app moved to the Removed page: its card is hidden, its shortcuts are kept.
+    public var removedAt: Date?
 
-    public init(id: UUID = UUID(), name: String, colour: String, shortcuts: [Shortcut] = []) {
+    public init(id: UUID = UUID(), name: String, colour: String, shortcuts: [Shortcut] = [], removedAt: Date? = nil) {
         self.id = id; self.name = name; self.colour = colour; self.shortcuts = shortcuts
+        self.removedAt = removedAt
     }
 
-    enum CodingKeys: String, CodingKey { case id, name, colour, shortcuts }
+    enum CodingKeys: String, CodingKey { case id, name, colour, shortcuts, removedAt }
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
         id = (try? c.decodeIfPresent(UUID.self, forKey: .id)) ?? UUID()
         name = (try? c.decodeIfPresent(String.self, forKey: .name)) ?? ""
         colour = (try? c.decodeIfPresent(String.self, forKey: .colour)) ?? "purple"
         shortcuts = (try? c.decodeIfPresent([Shortcut].self, forKey: .shortcuts)) ?? []
+        removedAt = try? c.decodeIfPresent(Date.self, forKey: .removedAt)
     }
 }
 

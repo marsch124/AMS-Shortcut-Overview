@@ -45,7 +45,7 @@ public enum Rules {
         g.shortcuts.filter { status($0, now: now) == .learned }.count
     }
 
-    /// Tick on the card: learning → learned (recheck in two weeks); recheck → learned for good.
+    /// Tick on the card: learning → learned (recheck in two weeks); recheck → learned, no more rechecks.
     public static func tick(_ s: inout Shortcut, now: Date) {
         switch status(s, now: now) {
         case .learning: s.learnedAt = now; s.recheckDone = false
@@ -71,16 +71,122 @@ public enum Rules {
         }.count
     }
 
-    /// Adds a ready-made app's card unless an app of that name is already there.
+    /// Adds a ready-made app's card unless an app of that name is already on the list.
+    /// An app of that name on the Removed page comes back as it was instead of a second copy.
     /// Fresh ids; its own colour if free, otherwise the next free one. Returns false when skipped.
     @discardableResult
     public static func addReadyMade(_ group: AppGroup, to lib: inout ShortcutLibrary, now: Date = Date()) -> Bool {
-        guard !lib.groups.contains(where: { $0.name.caseInsensitiveCompare(group.name) == .orderedSame }) else { return false }
-        let used = lib.groups.map(\.colour)
+        if let old = lib.groups.first(where: { $0.name.caseInsensitiveCompare(group.name) == .orderedSame }) {
+            guard !isOnList(old) else { return false }
+            bringBackGroup(old.id, in: &lib)
+            return true
+        }
+        let used = active(lib.groups).map(\.colour)
         let colour = used.contains(group.colour) ? nextColour(used: used) : group.colour
         let shortcuts = group.shortcuts.map { Shortcut(name: $0.name, keys: $0.keys, addedAt: now) }
         lib.groups.append(AppGroup(name: group.name, colour: colour, shortcuts: shortcuts))
         return true
+    }
+
+    // MARK: Removed — nothing is ever deleted, only hidden
+
+    /// An app that shows on the list: not removed, with at least one shortcut that is not removed.
+    public static func isOnList(_ g: AppGroup) -> Bool {
+        g.removedAt == nil && g.shortcuts.contains { $0.removedAt == nil }
+    }
+
+    /// Your list as every page and card sees it: the apps on the list, each without its removed shortcuts.
+    public static func active(_ groups: [AppGroup]) -> [AppGroup] {
+        groups.filter(isOnList).map { g in
+            var c = g; c.shortcuts = g.shortcuts.filter { $0.removedAt == nil }; return c
+        }
+    }
+
+    /// Whole apps on the Removed page, each with every shortcut it holds.
+    public static func removedApps(_ groups: [AppGroup]) -> [AppGroup] { groups.filter { $0.removedAt != nil } }
+
+    /// Single removed shortcuts, under their app (apps that were not removed as a whole).
+    public static func removedShortcuts(_ groups: [AppGroup]) -> [AppGroup] {
+        groups.filter { $0.removedAt == nil }.compactMap { g in
+            var c = g; c.shortcuts = g.shortcuts.filter { $0.removedAt != nil }
+            return c.shortcuts.isEmpty ? nil : c
+        }
+    }
+
+    public static func removeShortcut(_ id: UUID, in lib: inout ShortcutLibrary, now: Date) {
+        for g in lib.groups.indices {
+            if let i = lib.groups[g].shortcuts.firstIndex(where: { $0.id == id }) {
+                lib.groups[g].shortcuts[i].removedAt = now
+            }
+        }
+    }
+
+    public static func bringBackShortcut(_ id: UUID, in lib: inout ShortcutLibrary) {
+        for g in lib.groups.indices {
+            if let i = lib.groups[g].shortcuts.firstIndex(where: { $0.id == id }) {
+                lib.groups[g].shortcuts[i].removedAt = nil
+            }
+        }
+    }
+
+    public static func removeGroup(_ id: UUID, in lib: inout ShortcutLibrary, now: Date) {
+        if let g = lib.groups.firstIndex(where: { $0.id == id }) { lib.groups[g].removedAt = now }
+    }
+
+    /// The app's card comes back as it was. If every one of its shortcuts was removed one by one,
+    /// they all come back, so the card is not empty. A colour another app took meanwhile is swapped
+    /// for the next free one.
+    public static func bringBackGroup(_ id: UUID, in lib: inout ShortcutLibrary) {
+        guard let g = lib.groups.firstIndex(where: { $0.id == id }) else { return }
+        let used = active(lib.groups.filter { $0.id != id }).map(\.colour)
+        lib.groups[g].removedAt = nil
+        if !lib.groups[g].shortcuts.contains(where: { $0.removedAt == nil }) {
+            for i in lib.groups[g].shortcuts.indices { lib.groups[g].shortcuts[i].removedAt = nil }
+        }
+        if used.contains(lib.groups[g].colour) { lib.groups[g].colour = nextColour(used: used) }
+    }
+
+    /// Move left / right among the apps on the list; removed apps in between are stepped over.
+    public static func moveGroup(_ id: UUID, by step: Int, in lib: inout ShortcutLibrary) {
+        let shown = lib.groups.indices.filter { isOnList(lib.groups[$0]) }
+        guard let p = shown.firstIndex(where: { lib.groups[$0].id == id }), shown.indices.contains(p + step) else { return }
+        lib.groups.swapAt(shown[p], shown[p + step])
+    }
+
+    // MARK: Weeks in a row
+
+    /// How many weeks in a row at least one shortcut was learned. The current week does not
+    /// break the run while it has no tick yet: the run ends when a full week passes with none.
+    public static func weekStreak(_ groups: [AppGroup], now: Date, calendar: Calendar = .current) -> Int {
+        guard var week = calendar.dateInterval(of: .weekOfYear, for: now)?.start else { return 0 }
+        let weeks = Set(groups.flatMap(\.shortcuts).compactMap { s in
+            s.learnedAt.flatMap { calendar.dateInterval(of: .weekOfYear, for: $0)?.start }
+        })
+        if !weeks.contains(week) {
+            guard let before = calendar.date(byAdding: .weekOfYear, value: -1, to: week) else { return 0 }
+            week = before
+        }
+        var count = 0
+        while weeks.contains(week), count < 5000 {
+            count += 1
+            guard let before = calendar.date(byAdding: .weekOfYear, value: -1, to: week) else { break }
+            week = before
+        }
+        return count
+    }
+
+    // MARK: Rows of cards
+
+    /// How many cards fit side by side in this width.
+    public static func cardsPerRow(width: Double, card: Double = 260, gap: Double = 10) -> Int {
+        max(1, Int((width + gap) / (card + gap)))
+    }
+
+    /// Cards in rows, bottom row first: the first cards keep their place on the bottom row,
+    /// the ones that do not fit go to a row above.
+    public static func cardRows<T>(_ items: [T], perRow: Int) -> [[T]] {
+        let n = max(1, perRow)
+        return stride(from: 0, to: items.count, by: n).map { Array(items[$0..<min($0 + n, items.count)]) }
     }
 
     /// "⌘ ⇧ F" → ["⌘","⇧","F"]. Also splits "⌘⇧F" written without spaces.

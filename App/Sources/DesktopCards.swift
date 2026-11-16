@@ -47,9 +47,12 @@ final class DesktopController {
         guard model.showCards, !model.visibleGroups.isEmpty, let screen = NSScreen.main else {
             panel.orderOut(nil); return
         }
+        let area = screen.visibleFrame
+        // Cards that do not fit side by side go to a second row above.
+        let perRow = Rules.cardsPerRow(width: Double(area.width) - 28)
+        if model.cardsPerRow != perRow { model.cardsPerRow = perRow }
         host.layout()
         let size = host.fittingSize
-        let area = screen.visibleFrame
         let width = min(size.width, area.width - 24)
         let frame = NSRect(x: area.midX - width / 2, y: area.minY + 14, width: width, height: size.height)
         panel.setFrame(frame, display: true)
@@ -70,9 +73,15 @@ struct CardStrip: View {
     @ObservedObject var model: AppModel
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            ForEach(model.visibleGroups) { group in
-                AppCard(model: model, group: group)
+        // Bottom row first: the first cards keep their place, later ones sit in a row above.
+        let rows = Rules.cardRows(model.visibleGroups, perRow: model.cardsPerRow)
+        VStack(spacing: 10) {
+            ForEach(Array(rows.enumerated().reversed()), id: \.offset) { _, row in
+                HStack(alignment: .bottom, spacing: 10) {
+                    ForEach(row) { group in
+                        AppCard(model: model, group: group)
+                    }
+                }
             }
         }
         .padding(2)

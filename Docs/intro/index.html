@@ -303,22 +303,24 @@ function renderStage() {
       pane = S.learnedList.length ? `<div class="week" data-t="weekline">This week: ${S.week} learned · ${S.learnedList.length} learned in all</div>` +
         S.learnedList.map(l => `<div class="lrow">${esc(l.n)}<span class="st">${l.good ? 'Learned, no more rechecks' : 'Recheck on 30 Nov'}</span><span class="keys">${caps(l.k)}</span><span style="color:var(--purple-mark)">Bring back</span></div>`).join('')
         : '<p style="text-align:center;color:var(--muted);margin-top:40px">Nothing learned yet</p>';
+    } else if (S.tab === 'removed') {
+      pane = '<div class="week">Nothing is ever deleted. Bring back what you want to see again.</div><p style="text-align:center;color:var(--muted);margin-top:40px">Nothing removed</p>';
     } else {
       pane = `<div class="lrow">Show the cards on the desktop<span class="keys">On</span></div><div class="lrow">Shortcuts per card: 6</div>
         <div class="lrow">Today's shortcuts<span class="keys">${S.daily ? 'On' : 'Off'}</span></div><div class="lrow">Quiz me<span class="keys">${S.quiz ? 'On' : 'Off'}</span></div>
-        <div class="lrow">Open at login<span class="keys">On</span></div><div class="lrow">Version<span class="keys">0.3 (3)</span></div>`;
+        <div class="lrow">Open at login<span class="keys">On</span></div><div class="lrow">Version<span class="keys">0.4 (6)</span></div>`;
     }
-    const missing = ['Raycast','Fusion','Xcode','Safari'].filter(n => !S.cards.some(c => c.name === n));
+    const missing = ['Raycast','Fusion','Xcode','Safari','Mail','Notes'].filter(n => !S.cards.some(c => c.name === n));
     manage = `<div class="win manage" data-t="manage">
       <div class="tb"><span class="dots"><i data-act="close-manage"></i><i></i><i></i></span><span class="ttl">AMS Shortcut Overview</span></div>
-      <div class="tabs">${[['shortcuts','Shortcuts'],['learned','Learned'],['settings','Settings'],['g','How it works'],['w',"What's new"]].map(([k, l]) =>
+      <div class="tabs">${[['shortcuts','Shortcuts'],['learned','Learned'],['removed','Removed'],['settings','Settings'],['g','How it works'],['w',"What's new"]].map(([k, l]) =>
         `<button class="${S.tab === k ? 'on' : ''}" data-act="tab" data-tab="${k}" data-t="tab-${k}">${l}</button>`).join('')}</div>
       <div class="pane">${pane}</div>
-      ${S.tab === 'shortcuts' ? `<div class="foot">Version 0.3 (3)<span class="sp"></span>
+      ${S.tab === 'shortcuts' ? `<div class="foot">Version 0.4 (6)<span class="sp"></span>
         <button class="mbtn" data-act="ready" data-t="ready">Add ready-made app ▾</button><button class="mbtn prim" data-act="m-add">Add shortcut</button>
         ${S.drop ? `<div class="drop">${missing.map(n => n === 'Safari' ? `<button data-act="pick" data-name="${n}" data-t="pick-${n}">${n} (8 shortcuts)</button>` : `<button disabled style="opacity:.45;cursor:default">${n} (8 shortcuts)</button>`).join('')}</div>` : ''}</div>` : ''}
-      ${S.confirm ? `<div class="sheet"><div class="box"><b>Remove ${S.confirm} and its ${S.cards.find(c => c.name === S.confirm).rows.length} shortcuts?</b>
-        <p>The card and all its shortcuts go, learned ones too.</p><div class="r">
+      ${S.confirm ? `<div class="sheet"><div class="box"><b>Remove ${S.confirm} from the desktop?</b>
+        <p>The card and its ${S.cards.find(c => c.name === S.confirm).rows.length} shortcuts move to the Removed page. Bring them back from there any time.</p><div class="r">
         <button class="mbtn" data-act="cancel-remove" data-t="cancel-remove">Cancel</button><button class="mbtn danger" data-act="do-remove">Remove</button></div></div></div>` : ''}
     </div>`;
   }
@@ -435,7 +437,7 @@ const LESSONS = [
     { kind: 'look', head: 'Two weeks later: a recheck', text: 'After 14 days it comes back once, at the top, with a "Recheck" label.', setup: () => { const c = S.cards[0]; if (!c.rows.some(r => r.recheck)) { c.rows.unshift({ n: 'Quick switcher', k: '⌘ O', recheck: true }); c.learned = Math.max(0, c.learned - 1); } }, target: 'row-Quick switcher' },
     { kind: 'try', head: 'Still know it?', text: 'Tick it again: no more rechecks, and it leaves the card. (Forgot it? On your Mac, right-click the row and choose "Still learning".)', target: 'tick-Quick switcher', wait: 'tick', ok: 'Hidden from the card, but still in your list: it waits on the Learned page, and "Bring back" puts it on the card again.' },
     { kind: 'check', head: 'Quick check', text: 'When does a ticked shortcut come back?', answers: ['Every morning', 'Once, after two weeks', 'Never'], right: 1, ok: 'Right: once, as a recheck.' },
-    { kind: 'check', head: 'Quick check', text: 'You ticked a shortcut and it left the card. Is it deleted?', answers: ['Yes, it is gone', 'No, it is only hidden and stays in your list', 'Only after two weeks'], right: 1, ok: 'Right. Ticking never deletes. Only Delete or Remove does, and only when you choose it.' },
+    { kind: 'check', head: 'Quick check', text: 'You ticked a shortcut and it left the card. Is it deleted?', answers: ['Yes, it is deleted', 'No, it is only hidden and stays in your list', 'Only after two weeks'], right: 1, ok: 'Right. Ticking never deletes. Nothing is ever deleted: even "Remove" only moves a shortcut to the Removed page, and you can bring it back.' },
   ]},
   { title: 'Quiz me', icon: 'glasses', steps: [
     { kind: 'try', head: 'Open the menu bar icon', text: 'Click the keyboard-key icon at the top right of the screen.', target: 'kicon', wait: 'menu', ok: 'This menu has the switches.' },
@@ -451,13 +453,13 @@ const LESSONS = [
   { title: 'Add your own', icon: 'notebook', steps: [
     { kind: 'try', head: 'Use the + on a card', text: 'Click the small + at the top right of the Finder card.', target: 'plus-Finder', wait: 'editor', ok: 'The app is already filled in: Finder.' },
     { kind: 'try', head: 'Fill it in and Save', text: 'What it does: "Desktop folder". Keys: press the ⌘ and ⇧ buttons, then type D. Then Save.', target: 'e-name', wait: 'saved', ok: 'Saved. It is the newest row of the Finder card ("+3 more").', hint: 'The "Looks like" line shows the keys as they will look on the card.' },
-    { kind: 'look', head: 'Cancel and change', text: 'Cancel (or Escape) closes without saving. To change or delete a shortcut later, right-click its row and choose "Change…".', target: 'card-Finder' },
+    { kind: 'look', head: 'Cancel and change', text: 'Cancel (or Escape) closes without saving. To change or remove a shortcut later, right-click its row and choose "Change…"; the Remove button is in the same window.', target: 'card-Finder' },
   ]},
   { title: 'The window', icon: 'map', steps: [
-    { kind: 'try', head: 'Open the window', text: 'Menu bar icon → "Shortcuts and settings…".', target: 'kicon', menuTarget: 'm-manage', wait: 'manage', ok: 'Five pages: Shortcuts, Learned, Settings, How it works, What\'s new.' },
+    { kind: 'try', head: 'Open the window', text: 'Menu bar icon → "Shortcuts and settings…".', target: 'kicon', menuTarget: 'm-manage', wait: 'manage', ok: 'Six pages: Shortcuts, Learned, Removed, Settings, How it works, What\'s new.' },
     { kind: 'try', head: 'See what you learned', text: 'Open the Learned page.', target: 'tab-learned', wait: 'tab', ok: 'It shows this week\'s count and everything you learned.' },
     { kind: 'try', head: 'Add a ready-made app', text: 'Go back to Shortcuts, press "Add ready-made app" and pick Safari.', target: 'tab-shortcuts', wait: 'picked', ok: 'Safari\'s green card with 8 shortcuts is on the desktop.', chain: ['ready', 'pick-Safari'] },
-    { kind: 'try', head: 'Remove asks first', text: 'Press "Remove" next to Safari. Then press Cancel to keep it.', target: 'remove-Safari', wait: 'cancel-remove', alt: 'removed', ok: 'Nothing removed. Remove deletes a card with all its shortcuts, learned ones too.', chain: ['cancel-remove'] },
+    { kind: 'try', head: 'Remove asks first', text: 'Press "Remove" next to Safari. Then press Cancel to keep it.', target: 'remove-Safari', wait: 'cancel-remove', alt: 'removed', ok: 'Nothing removed. Remove only moves a card to the Removed page. Nothing is ever deleted.', chain: ['cancel-remove'] },
     { kind: 'look', head: 'Learned this week', text: 'The menu bar menu also shows your count for the week. The week starts on Monday.', setup: () => { S.manage = false; S.menu = true; }, target: 'm-week' },
   ]},
 ];

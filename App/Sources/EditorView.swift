@@ -21,8 +21,8 @@ struct EditorView: View {
     }
 
     private var colour: String {
-        model.library.groups.first { $0.name.caseInsensitiveCompare(appName) == .orderedSame }?.colour
-            ?? Rules.nextColour(used: model.library.groups.map(\.colour))
+        model.groups.first { $0.name.caseInsensitiveCompare(appName) == .orderedSame }?.colour
+            ?? Rules.nextColour(used: model.groups.map(\.colour))
     }
 
     var body: some View {
@@ -36,7 +36,7 @@ struct EditorView: View {
                     HStack(spacing: 4) {
                         TextField("Obsidian", text: $appName).accessibilityIdentifier("editorApp")
                         Menu("Pick") {
-                            ForEach(model.library.groups) { g in Button(g.name) { appName = g.name } }
+                            ForEach(model.groups) { g in Button(g.name) { appName = g.name } }
                         }
                         .fixedSize()
                     }
@@ -69,7 +69,9 @@ struct EditorView: View {
 
             HStack {
                 if let o = original {
-                    Button("Delete", role: .destructive) { model.delete(o.id); close() }
+                    Button("Remove") { model.remove(o.id); close() }
+                        .help("Moves it to the Removed page. Nothing is deleted; bring it back any time.")
+                        .accessibilityIdentifier("editorRemove")
                 }
                 Spacer()
                 Button("Cancel") { close() }.keyboardShortcut(.cancelAction)
