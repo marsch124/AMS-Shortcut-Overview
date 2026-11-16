@@ -7,6 +7,7 @@ A small Mac menu bar app that puts the keyboard shortcuts you are learning on yo
 - Starts with 8 shortcuts each for Obsidian, Raycast, Autodesk Fusion, Finder and Xcode; Safari, Mail and Notes (8 each) are ready-made too and wait in "Add ready-made app".
 - Counts your learned shortcuts per week and the weeks in a row.
 - Your list is safe: a safety copy, one dated copy per day for 30 days, and a warning if saving fails.
+- Export my list (Settings): one file with everything, saved wherever you like, as your own copy.
 - Add your own from the menu bar or the + on a card; any app gets its own colour.
 - Day and night colours. Nothing leaves your Mac.
 

@@ -126,9 +126,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
               let host = URL(string: s)?.host else { return }
         switch host {
         case "settings": openManage()
-        case "removed", "learned", "shortcuts":
+        case "export":   // for checks: writes an export next to the pictures, without the Save window
+            let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("com.schabbauer.AMSShortcutOverview", isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            model.export(to: dir.appendingPathComponent("export-check.json"))
+        case "removed", "learned", "shortcuts", "settings-page":
             openManage()
-            NotificationCenter.default.post(name: .showPage, object: host)
+            NotificationCenter.default.post(name: .showPage, object: host == "settings-page" ? "settings" : host)
         case "dailyOn", "dailyOff": model.dailyPick = host == "dailyOn"; desktop?.refresh()
         case "quizOn", "quizOff": model.quiz = host == "quizOn"; desktop?.refresh()
         case "add": openEditor(shortcut: nil, appName: "")

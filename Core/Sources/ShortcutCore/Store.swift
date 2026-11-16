@@ -87,6 +87,18 @@ public struct LibraryStore {
         return String(format: "shortcuts-%04d-%02d-%02d.json", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
+    /// The name offered for an export: "AMS Shortcut Overview list 2026-11-16.json".
+    public static func exportName(_ day: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: day)
+        return String(format: "AMS Shortcut Overview list %04d-%02d-%02d.json", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    /// Writes the whole list (learned and removed ones too) to a file of the user's choice.
+    /// Same form as the app's own list file. Changes nothing in the list.
+    public static func export(_ lib: ShortcutLibrary, to url: URL) throws {
+        try lib.encoded().write(to: url, options: .atomic)
+    }
+
     /// The dated copies beyond the newest 30.
     public static func namesToDelete(_ names: [String], keep: Int = keepDays) -> [String] {
         Array(names.sorted(by: >).dropFirst(keep))

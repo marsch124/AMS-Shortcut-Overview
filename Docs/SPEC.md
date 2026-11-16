@@ -1,6 +1,6 @@
 # AMS Shortcut Overview — specification
 
-Version 0.4 (6), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
+Version 0.5 (7), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
 
 ## Purpose
 Help learn keyboard shortcuts by keeping the ones still being learned in sight on the desktop, one colour card per app.
@@ -49,7 +49,7 @@ Seven: purple, coral, teal, blue, pink, amber, green. Day: pale fill (50), dark 
 - Menu bar menu: "Learned this week: 3 · 2 weeks in a row" (below 2 weeks: "Learned this week: 3" as before). Learned page first line: "This week: 3 learned · 12 learned in all · 2 weeks in a row" (the last part only from 2 weeks).
 
 ## Window (menu bar → "Shortcuts and settings…")
-Six tabs (before 0.4: five), 560 × 520, in this order: Shortcuts, Learned, Removed, Settings, How it works, What's new. Shortcuts (grouped by app, colour dot cycles colour, Move left/right reorders cards, Remove per app (hides it, see below), Change per row, "Add shortcut" and "Add ready-made app" buttons at the bottom, version), Learned (first line "This week: N learned · M learned in all", N = `Rules.learnedThisWeek`, M = all shortcuts currently on the page; then recheck date or "Learned, no more rechecks", Bring back; empty-state text; "· W weeks in a row" added from 2 weeks), Removed (see below), Settings (show cards, shortcuts per card, Today's shortcuts, Quiz me, open at login, Show in Finder, version), How it works, What's new.
+Six tabs (before 0.4: five), 560 × 520, in this order: Shortcuts, Learned, Removed, Settings, How it works, What's new. Shortcuts (grouped by app, colour dot cycles colour, Move left/right reorders cards, Remove per app (hides it, see below), Change per row, "Add shortcut" and "Add ready-made app" buttons at the bottom, version), Learned (first line "This week: N learned · M learned in all", N = `Rules.learnedThisWeek`, M = all shortcuts currently on the page; then recheck date or "Learned, no more rechecks", Bring back; empty-state text; "· W weeks in a row" added from 2 weeks), Removed (see below), Settings (show cards, shortcuts per card, Today's shortcuts, Quiz me, open at login, Show in Finder, "A copy to keep anywhere" with "Export my list…" (0.5, see "Export my list"), version), How it works, What's new.
 
 ## Removed page — nothing is ever deleted (0.4)
 - Before 0.4 the editor's "Delete" and the app's "Remove" took shortcuts out of the list completely. Now there is no way to delete a shortcut: the editor button is "Remove", and it and the app's "Remove" only hide. Each shortcut and each group carries a removed flag; removed things stay in `shortcuts.json` with all their fields (`learnedAt`, `recheckDone`, colour).
@@ -84,6 +84,14 @@ Red line "Could not save your list" at the top while the last save failed (0.4).
 - A failed save shows a red line "Could not save your list" at the top of the window and in the menu bar menu; the save is retried every hour and with the next change, and the line goes away when it worked (before 0.4 nothing was shown).
 - Environment variable `AMS_SHORTCUTS_FOLDER` points the app at another folder for its list (an internal aid for checking screens with a test list; nothing a user needs).
 
+## Export my list (0.5)
+- Before 0.5 the list lived only in `shortcuts.json` and the safety copies next to it. Now Settings has a new row "A copy to keep anywhere" with the button "Export my list…", directly under the row "Your list is kept in" / "Show in Finder".
+- The button opens the standard save panel (`NSSavePanel`) with the title "Export my list". The name is pre-filled as `AMS Shortcut Overview list yyyy-MM-dd.json` (today's date). The user chooses the place (iCloud Drive, Dropbox, a USB stick, anywhere). Cancel closes the panel and writes nothing. Saving twice under the same name asks before replacing, as the panel always does.
+- The file holds the whole list: every app and every shortcut with all fields (learned date, recheck done, colour, order) and the removed ones (`removedAt`) too. Its form is the same as `shortcuts.json` (same encoder, ISO dates), so it reads back exactly as the list was.
+- After a successful save a grey caption under the row reads, for example, "Last export: 16 Nov 2026 at 14:05 · 5 apps, 40 shortcuts". The counts include removed apps and shortcuts. The date and counts are stored in the app's settings (UserDefaults), so the line stays after a restart. If writing fails, a red caption "Could not export: <reason>" shows instead.
+- Exporting only reads the list: it changes nothing in the list, makes no safety copy and can be done as often as wanted.
+- Not in 0.5: the app cannot read an export back in. The file is the user's own copy; restoring from it is left to a later version.
+
 ## Start
 Registers itself as a login item on the first start (switch in Settings). Refreshes "now" every hour so rechecks appear by themselves.
 
@@ -91,4 +99,4 @@ Registers itself as a login item on the first start (switch in Settings). Refres
 `amsshortcuts://settings | add | day | night | system | snapshot` — snapshot writes `cards-<look>.png` (and the open windows) to `~/Library/Caches/com.schabbauer.AMSShortcutOverview/`.
 
 ## Build
-`Tools/install.sh` (XcodeGen + xcodebuild, installs to `~/Applications`). Rules: `cd Core && swift test` (21 tests, before 0.4: 7: the earlier ones plus new ones for weeks in a row, the Removed page, saving, loading and the safety copies). The tests run automatically on GitHub after every change to the code (free, the repository is public). Icon: `Tools/make-icon.py`.
+`Tools/install.sh` (XcodeGen + xcodebuild, installs to `~/Applications`). Rules: `cd Core && swift test` (22 tests; 0.4 had 21 and before 0.4 there were 7: the earlier ones plus tests for weeks in a row, the Removed page, saving, loading and the safety copies, and in 0.5 one that checks an exported file reads back exactly as the list was, learned and removed ones included). The tests run automatically on GitHub after every change to the code (free, the repository is public). Icon: `Tools/make-icon.py`.

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import ShortcutCore
 
 /// Holds the shortcut list, saves it on this Mac, and keeps a safety copy.
@@ -23,6 +24,10 @@ final class AppModel: ObservableObject {
     @Published private(set) var saveProblem: String?
     /// Set when the list had to be restored from a safety copy; shown once in the window.
     @Published var restoreNotice: String?
+
+    /// "Last export: 16 Nov 2026, 14:05 · 5 apps, 40 shortcuts" — kept across restarts.
+    @AppStorage("lastExport") var lastExport = ""
+    @Published private(set) var exportProblem: String?
 
     /// For checks: AMS_SHORTCUTS_FOLDER points the app at a test list instead of the real one.
     static let testFolder: URL? = ProcessInfo.processInfo.environment["AMS_SHORTCUTS_FOLDER"]
@@ -106,6 +111,33 @@ final class AppModel: ObservableObject {
             saveProblem = nil
         } catch {
             saveProblem = "Could not save your list (\(error.localizedDescription)). The app tries again every hour and with your next change."
+        }
+    }
+
+    // MARK: Export
+
+    /// Asks where, then writes the whole list as one file to keep anywhere.
+    func exportList() {
+        let panel = NSSavePanel()
+        panel.title = "Export my list"
+        panel.message = "One file with every app and shortcut, learned and removed ones too."
+        panel.nameFieldStringValue = LibraryStore.exportName(Date())
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        export(to: url)
+    }
+
+    func export(to url: URL) {
+        do {
+            try LibraryStore.export(library, to: url)
+            let shortcuts = library.groups.reduce(0) { $0 + $1.shortcuts.count }
+            let when = Date().formatted(.dateTime.day().month(.abbreviated).year().hour().minute())
+            lastExport = "Last export: \(when) · \(library.groups.count) apps, \(shortcuts) shortcuts"
+            exportProblem = nil
+        } catch {
+            exportProblem = "Could not export: \(error.localizedDescription)"
         }
     }
 

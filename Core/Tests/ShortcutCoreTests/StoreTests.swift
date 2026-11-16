@@ -92,6 +92,24 @@ final class StoreTests: XCTestCase {
         XCTAssertTrue(LibraryStore.namesToDelete(Array(all.prefix(30))).isEmpty)
     }
 
+    func testAnExportReadsBackExactlyAsTheListWasLearnedAndRemovedIncluded() throws {
+        var l = lib("A", "B", "C")
+        Rules.tick(&l.groups[0].shortcuts[0], now: day(10))
+        Rules.removeGroup(l.groups[1].id, in: &l, now: day(16))
+        Rules.removeShortcut(l.groups[2].shortcuts[0].id, in: &l, now: day(16))
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        let name = LibraryStore.exportName(day(16), calendar: cal)
+        XCTAssertEqual(name, "AMS Shortcut Overview list 2026-11-16.json")
+        let url = folder.appendingPathComponent(name)
+        try LibraryStore.export(l, to: url)
+        let back = try ShortcutLibrary.decode(Data(contentsOf: url))
+        XCTAssertEqual(back.groups.map(\.name), ["A", "B", "C"])
+        XCTAssertEqual(back.groups[0].shortcuts[0].learnedAt, day(10))
+        XCTAssertNotNil(back.groups[1].removedAt)
+        XCTAssertNotNil(back.groups[2].shortcuts[0].removedAt)
+        XCTAssertEqual(back.groups.map(\.id), l.groups.map(\.id))
+    }
+
     func testRemovedMarksSurviveSavingAndLoading() throws {
         var l = lib("A", "B")
         Rules.removeGroup(l.groups[1].id, in: &l, now: day(16))

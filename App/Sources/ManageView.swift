@@ -279,6 +279,15 @@ struct LookPage: View {
                 Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([model.file]) }
                     .buttonStyle(.borderless)
             }
+            LabeledContent {
+                Button("Export my list…") { model.exportList() }
+                    .buttonStyle(.borderless)
+                    .accessibilityIdentifier("exportList")
+            } label: {
+                Text("A copy to keep anywhere")
+                if !model.lastExport.isEmpty { Text(model.lastExport) }
+                if let problem = model.exportProblem { Text(problem).foregroundStyle(.red) }
+            }
             LabeledContent("Version", value: Guide.version)
         }
         .formStyle(.grouped)
