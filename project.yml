@@ -18,8 +18,8 @@ targets:
       path: App/Config/Info.plist
       properties:
         CFBundleDisplayName: AMS Shortcut Overview
-        CFBundleShortVersionString: "0.5"
-        CFBundleVersion: "7"
+        CFBundleShortVersionString: "0.5.1"
+        CFBundleVersion: "8"
         CFBundleIconFile: AppIcon
         LSUIElement: true
         CFBundleURLTypes:

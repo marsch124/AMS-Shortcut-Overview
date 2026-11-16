@@ -1,6 +1,6 @@
 # AMS Shortcut Overview — specification
 
-Version 0.5 (7), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
+Version 0.5.1 (8), 16 Nov 2026. Mac only (macOS 15+), menu bar app without a Dock icon.
 
 ## Purpose
 Help learn keyboard shortcuts by keeping the ones still being learned in sight on the desktop, one colour card per app.
@@ -36,6 +36,7 @@ Seven: purple, coral, teal, blue, pink, amber, green. Day: pale fill (50), dark 
 - tick while learning → `learnedAt` = now → hidden.
 - 14 days after `learnedAt` → recheck → shown again at the top with "Recheck".
 - tick on recheck → `recheckDone` → no more rechecks; hidden from the card but KEPT in the list (Shortcuts + Learned pages, "Learned, no more rechecks"); "Bring back" restores it. Ticking never deletes. Nothing is ever deleted (0.4): Remove (editor and app) only hides, see "Removed page".
+- Time of a tick (fixed in 0.5.1): `learnedAt` (and `removedAt`) is the exact moment of the click. Before 0.5.1 it was the app's "now", which only moves with the hourly clock check, so it could be up to one hour too early; two ticks a minute apart both got the app's start time. Now the recheck is 14 days after the real moment, and a tick just after Monday midnight counts in the right week.
 - "Still learning" / "Bring back" → `learnedAt` = nil, `recheckDone` = false.
 
 ## Learned this week (0.3)
@@ -53,7 +54,7 @@ Six tabs (before 0.4: five), 560 × 520, in this order: Shortcuts, Learned, Remo
 
 ## Removed page — nothing is ever deleted (0.4)
 - Before 0.4 the editor's "Delete" and the app's "Remove" took shortcuts out of the list completely. Now there is no way to delete a shortcut: the editor button is "Remove", and it and the app's "Remove" only hide. Each shortcut and each group carries a removed flag; removed things stay in `shortcuts.json` with all their fields (`learnedAt`, `recheckDone`, colour).
-- Removing an app asks "Remove <app> from the desktop?" with the note "The card and its N shortcuts move to the Removed page. Bring them back from there any time." (Cancel / Remove).
+- Removing an app asks "Remove <app> from the desktop?" with the note "The card and its N shortcuts move to the Removed page. Bring them back from there any time." (Cancel / Remove). "Remove" is the coloured main button and the Return key presses it; Escape is Cancel (seen with the window in front; while another app is in front the Mac draws both buttons grey).
 - Removed page: first line "Nothing is ever deleted. Bring back what you want to see again." Removed apps are listed with their shortcuts and one button "Bring back app"; single removed shortcuts are listed under their app's name, each with "Bring back". Empty: "Nothing removed".
 - Bring back restores exactly as it was (learned state, recheck date, colour). If another app took the colour meanwhile, the next free colour is used.
 - Stored as a date, `removedAt`, on the shortcut or on the group (absent = on the list). Every page, card and count works on `Rules.active(groups)`: groups without `removedAt`, each without its removed shortcuts. The two learned-this-week counts and the weeks in a row count every shortcut, removed ones too.
@@ -82,7 +83,7 @@ Red line "Could not save your list" at the top while the last save failed (0.4).
 - A list file that cannot be read, or that has no apps at all (the app only hides, so a real list is never empty), is treated as damaged: the file is moved aside as `shortcuts-unreadable-<time>.json` (never overwritten) and the list is loaded from the safety copy; if that is no good, from the newest good dated copy. Before 0.4 a file with no apps was accepted and could later overwrite the good list. The window shows an amber line saying where the list was restored from.
 - The app refuses to save an empty list over a good one.
 - A failed save shows a red line "Could not save your list" at the top of the window and in the menu bar menu; the save is retried every hour and with the next change, and the line goes away when it worked (before 0.4 nothing was shown).
-- Environment variable `AMS_SHORTCUTS_FOLDER` points the app at another folder for its list (an internal aid for checking screens with a test list; nothing a user needs).
+- Environment variable `AMS_SHORTCUTS_FOLDER` points the app at another folder for its list (an internal aid for checking screens with a test list; nothing a user needs). On a test list (0.5.1) the app also shows as a normal app with a Dock icon, so that click checks can find it; the normal app never does.
 
 ## Export my list (0.5)
 - Before 0.5 the list lived only in `shortcuts.json` and the safety copies next to it. Now Settings has a new row "A copy to keep anywhere" with the button "Export my list…", directly under the row "Your list is kept in" / "Show in Finder".
@@ -91,6 +92,17 @@ Red line "Could not save your list" at the top while the last save failed (0.4).
 - After a successful save a grey caption under the row reads, for example, "Last export: 16 Nov 2026 at 14:05 · 5 apps, 40 shortcuts". The counts include removed apps and shortcuts. The date and counts are stored in the app's settings (UserDefaults), so the line stays after a restart. If writing fails, a red caption "Could not export: <reason>" shows instead.
 - Exporting only reads the list: it changes nothing in the list, makes no safety copy and can be done as often as wanted.
 - Not in 0.5: the app cannot read an export back in. The file is the user's own copy; restoring from it is left to a later version.
+
+## Checked with real clicks (0.5.1)
+Before 0.5.1 the screens were only checked from pictures. For 0.5.1 the app was tried with real clicks and mouse presses on a separate test list (the real list was not touched). Tried and working:
+- A tick on a desktop card, once as a button press and once as a real mouse press: the row is crossed out and leaves the card, the card counts "1 learned" then "2 learned", and the list file holds it.
+- Quiz me: a click on the "?" keys of a row shows the real keys of that row only.
+- Shortcuts page: "Remove" next to an app shows "Remove Obsidian from the desktop?"; "Remove" moves the card with its 8 shortcuts to the Removed page.
+- Removed page: "Bring back app" puts the card back as it was (same place, "1 learned" still there).
+- Settings: "Export my list…" opens the Save window with the name filled in; Cancel writes nothing.
+- The + on a card opens the editor with the app filled in; the ⌘ button adds the key, "Looks like" shows it at once, and Save adds the shortcut as a 9th row of that app.
+- The first change of the day made the dated safety copy and the safety copy, as designed.
+Not tried: showing the keys by pointing with the mouse (only the click was tried), typing letters into the Keys field (the test tool could not type there), and the change at midnight.
 
 ## Start
 Registers itself as a login item on the first start (switch in Settings). Refreshes "now" every hour so rechecks appear by themselves.

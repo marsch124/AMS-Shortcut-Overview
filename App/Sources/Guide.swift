@@ -27,6 +27,20 @@ enum Guide {
     ]
 
     static let releases: [Release] = [
+        Release(version: "0.5.1 (8)", date: "16 Nov 2026", items: [
+            "Checked with real clicks. Before, the screens were only checked from pictures. Now the app was tried with real clicks and mouse presses, on a separate test list (your real list was not touched).",
+            "Tried and working: a tick on a desktop card, once as a button press and once as a real mouse press. The row is crossed out and leaves the card, the card counts \"1 learned\" and then \"2 learned\", and the list file holds it.",
+            "Tried and working: Quiz me. A click on the \"?\" keys of a row shows the real keys for that row only.",
+            "Tried and working: on the Shortcuts page, \"Remove\" next to an app asks \"Remove Obsidian from the desktop?\", and \"Remove\" moves the card with its 8 shortcuts to the Removed page. On the Removed page, \"Bring back app\" puts the card back as it was: same place, \"1 learned\" still there.",
+            "Tried and working: in Settings, \"Export my list…\" opens the Save window with the name filled in, and Cancel writes nothing.",
+            "Tried and working: the + on a card opens the editor with the app filled in. The ⌘ button adds the key, \"Looks like\" shows it at once, and Save adds the shortcut as a 9th row of that app.",
+            "Tried and working: the first change of the day made the dated safety copy and the safety copy, as designed.",
+            "Not tried yet: showing the keys by pointing with the mouse (only the click was tried), typing letters into the Keys field (the test tool could not type there), and the change at midnight.",
+            "Fixed: the time of a tick. Before, when you ticked a shortcut, the app noted the time of its last hourly clock check instead of the moment of your click, up to one hour too early (in the check, two ticks made a minute apart both got the app's start time). The same happened when you removed something. Now the exact moment of your click is noted.",
+            "What this changes for you: the recheck comes 14 days after the real moment of your tick, and a tick just after Monday midnight is counted in the right week.",
+            "Seen with the window in front: in the question \"Remove … from the desktop?\" the button \"Remove\" is the coloured main button and the Return key presses it; Escape is Cancel. (While another app is in front, the Mac draws both buttons grey.)",
+            "Tests: still 22, all passing. Nothing else changed.",
+        ]),
         Release(version: "0.5 (7)", date: "16 Nov 2026", items: [
             "New: \"Export my list\", one file you can keep anywhere. Before, your list lived only in the app's own folder on this Mac, plus the safety copies next to it. Now you can save one more copy wherever you like: iCloud Drive, Dropbox, a USB stick, anywhere.",
             "The Settings page has a new row, \"A copy to keep anywhere\", with the button \"Export my list…\". It sits directly under \"Your list is kept in\" and its \"Show in Finder\" button (before: the page had no export, so 1 row about your list, now 2).",

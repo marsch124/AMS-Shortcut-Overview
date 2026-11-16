@@ -101,7 +101,7 @@ final class AppModel: ObservableObject {
         guard !UserDefaults.standard.bool(forKey: flag) else { return }
         UserDefaults.standard.set(true, forKey: flag)
         let new = Self.readyMade.filter { ["Finder", "Xcode"].contains($0.name) }
-        let t = now
+        let t = Date()   // the moment of the click, not the hourly clock
         change { lib in for g in new { Rules.addReadyMade(g, to: &lib, now: t) } }
     }
 
@@ -142,6 +142,7 @@ final class AppModel: ObservableObject {
     }
 
     private func change(_ edit: (inout ShortcutLibrary) -> Void) {
+        now = Date()
         var lib = library
         edit(&lib)
         library = lib
@@ -182,7 +183,7 @@ final class AppModel: ObservableObject {
     // MARK: Changes
 
     func tick(_ id: UUID) {
-        let t = now
+        let t = Date()   // the moment of the click, not the hourly clock
         change { lib in
             for g in lib.groups.indices {
                 if let i = lib.groups[g].shortcuts.firstIndex(where: { $0.id == id }) {
@@ -234,7 +235,7 @@ final class AppModel: ObservableObject {
 
     /// Moves a shortcut to the Removed page. Nothing is ever deleted.
     func remove(_ id: UUID) {
-        let t = now
+        let t = Date()   // the moment of the click, not the hourly clock
         change { lib in Rules.removeShortcut(id, in: &lib, now: t) }
     }
 
@@ -243,13 +244,13 @@ final class AppModel: ObservableObject {
     }
 
     func addReadyMade(_ g: AppGroup) {
-        let t = now
+        let t = Date()   // the moment of the click, not the hourly clock
         change { lib in Rules.addReadyMade(g, to: &lib, now: t) }
     }
 
     /// Moves an app's card with all its shortcuts to the Removed page.
     func removeGroup(_ id: UUID) {
-        let t = now
+        let t = Date()   // the moment of the click, not the hourly clock
         change { lib in Rules.removeGroup(id, in: &lib, now: t) }
     }
 

@@ -34,6 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.menu = menu
 
         desktop = DesktopController(model: model)
+        // On a test list the app shows as a normal app (Dock icon), so click checks can find it.
+        if AppModel.testFolder != nil { NSApp.setActivationPolicy(.regular) }
 
         if AppModel.testFolder == nil, !UserDefaults.standard.bool(forKey: "didFirstStart") {
             UserDefaults.standard.set(true, forKey: "didFirstStart")

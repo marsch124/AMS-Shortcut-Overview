@@ -128,6 +128,7 @@ struct GroupHeader: View {
         .font(.caption)
         .confirmationDialog("Remove \(group.name) from the desktop?", isPresented: $askRemove) {
             Button("Remove") { model.removeGroup(group.id) }
+                .keyboardShortcut(.defaultAction)
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("The card and its \(group.shortcuts.count) shortcuts move to the Removed page. Bring them back from there any time.")
