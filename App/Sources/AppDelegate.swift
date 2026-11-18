@@ -17,10 +17,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var manageWindow: NSWindow?
     private var editorWindow: NSWindow?
+    private var stopSignal: DispatchSourceSignal?
 
     override init() { super.init(); AppDelegate.shared = self }
 
     func applicationDidFinishLaunching(_ note: Notification) {
+        // On a test list the app stands apart: no one-copy rule, no keeper.
+        if AppModel.testFolder == nil {
+            // Only one copy in the menu bar: the one that started first stays. (Before, two copies that started in
+            // the same moment each saw the other and both quit.)
+            if KeeperJob.mustQuitForEarlierCopy() {
+                NSApp.terminate(nil)
+                return
+            }
+            // "Open at login" is on: the app runs as the keeper's copy, so the Mac opens it again when it stops
+            // unexpectedly. A copy opened by hand, or by the Mac's login list, gives way to that copy.
+            KeeperJob.rememberWish()
+            if Keeper.handsOver(wanted: KeeperJob.wanted, openedByKeeper: KeeperJob.openedByKeeper,
+                                plain: KeeperJob.plain, inApplications: KeeperJob.inApplications) {
+                if KeeperJob.handOver() {
+                    NSApp.terminate(nil)
+                    return
+                }
+            } else if KeeperJob.openedByKeeper {
+                KeeperJob.writeFile()
+            }
+            // A polite stop from outside (the Mac shutting down, an update) ends the app cleanly, like Quit.
+            signal(SIGTERM, SIG_IGN)
+            let stop = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+            stop.setEventHandler { NSApp.terminate(nil) }
+            stop.resume()
+            stopSignal = stop
+        }
         // A saved place in the menu bar (pt from the right edge): between Mic Check (177) and
         // Deck Mate (266), right of Tidy Bar's line, so it always shows and never sits behind the notch.
         let placeKey = "NSStatusItem Preferred Position shortcutOverview"
@@ -40,6 +68,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if AppModel.testFolder == nil, !UserDefaults.standard.bool(forKey: "didFirstStart") {
             UserDefaults.standard.set(true, forKey: "didFirstStart")
             try? SMAppService.mainApp.register()
+            UserDefaults.standard.set(true, forKey: KeeperJob.wantedKey)
+            KeeperJob.writeFile()
         }
         NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(handleURL(_:reply:)),
                                                      forEventClass: AEEventClass(kInternetEventClass),

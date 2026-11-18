@@ -272,10 +272,18 @@ struct LookPage: View {
                 Text("The keys hide until you point at a row or click them.")
             }
             .accessibilityIdentifier("quizSwitch")
-            Toggle("Open at login", isOn: $atLogin)
+            Toggle(isOn: $atLogin) {
+                Text("Open at login")
+                Text("While this is on, the app also comes back by itself if it ever stops unexpectedly.")
+            }
                 .onChange(of: atLogin) { _, on in
                     if on { try? SMAppService.mainApp.register() } else { try? SMAppService.mainApp.unregister() }
+                    // The keeper follows the switch: its start order is written or removed with it.
+                    guard AppModel.testFolder == nil else { return }
+                    UserDefaults.standard.set(on, forKey: KeeperJob.wantedKey)
+                    if on { KeeperJob.writeFile() } else { KeeperJob.remove() }
                 }
+                .accessibilityIdentifier("openAtLoginSwitch")
             LabeledContent("Your list is kept in") {
                 Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([model.file]) }
                     .buttonStyle(.borderless)

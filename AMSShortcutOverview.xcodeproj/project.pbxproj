@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2795B1237F2FB299528D8DE8 /* Keeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE4CC534397CDD7695551093 /* Keeper.swift */; };
 		316C625CDB49831D401C2E93 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC080356F32D5A371EDC65C0 /* AppModel.swift */; };
 		3D187E572F656693B64044B1 /* Starter.json in Resources */ = {isa = PBXBuildFile; fileRef = A9924AD47EC0EC338D9DE21B /* Starter.json */; };
 		469C672B79CB6987FB396F41 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A96AA9C519D4290E188374 /* Palette.swift */; };
@@ -32,6 +33,7 @@
 		C3A96AA9C519D4290E188374 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		C3BF42A81B83CC628943138B /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		DEFFDD30C01D211A946F0642 /* ManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageView.swift; sourceTree = "<group>"; };
+		EE4CC534397CDD7695551093 /* Keeper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keeper.swift; sourceTree = "<group>"; };
 		FAAEC4CF2157B5C5E9A92FCB /* AMSShortcutOverview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AMSShortcutOverview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -55,6 +57,7 @@
 				B3174A84212937FB7C1588CA /* DesktopCards.swift */,
 				746914B30C0AF4048DC3BB68 /* EditorView.swift */,
 				4E5452E7EE37329191AC52B3 /* Guide.swift */,
+				EE4CC534397CDD7695551093 /* Keeper.swift */,
 				C137C3EC4C2A5AC34693E1AC /* LibraryIcon.swift */,
 				DEFFDD30C01D211A946F0642 /* ManageView.swift */,
 				C3A96AA9C519D4290E188374 /* Palette.swift */,
@@ -187,6 +190,7 @@
 				A0F29A3A18158BC0688BE28C /* DesktopCards.swift in Sources */,
 				871E07798E5C55B3B70DAB40 /* EditorView.swift in Sources */,
 				5558F1196A3C2AB71D28C281 /* Guide.swift in Sources */,
+				2795B1237F2FB299528D8DE8 /* Keeper.swift in Sources */,
 				D311327BE33EF8D208E5849F /* LibraryIcon.swift in Sources */,
 				A3E36D0717956F48C8329968 /* ManageView.swift in Sources */,
 				469C672B79CB6987FB396F41 /* Palette.swift in Sources */,
